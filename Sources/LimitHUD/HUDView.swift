@@ -1,65 +1,64 @@
 import SwiftUI
 
-/// Floating quota card, styled per the Framea Design System.
-/// Compact · solid dark surface · mono uppercase system labels · semantic quota ramp.
+/// Floating quota card. Compact, scalable, appearance-adaptive, custom background.
 struct HUDView: View {
     @ObservedObject var store: QuotaStore
     @ObservedObject private var settings = Settings.shared
+    @Environment(\.colorScheme) private var systemScheme
     var onClose: () -> Void = {}
     var onSettings: () -> Void = {}
 
-    // tick the countdowns every second without re-fetching
     @State private var now = Date()
     private let ticker = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
+    private var s: CGFloat { settings.cardScale }
+    private var cardBg: Color { settings.cardBgCustom ? settings.cardBgColor : Theme.surface }
+    /// Force the palette light/dark to stay readable on a custom background.
+    private var scheme: ColorScheme {
+        settings.cardBgCustom ? (settings.cardBgIsLight ? .light : .dark) : systemScheme
+    }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 11) {
+        VStack(alignment: .leading, spacing: 11 * s) {
             header
-            VStack(alignment: .leading, spacing: 11) {
+            VStack(alignment: .leading, spacing: 11 * s) {
                 ForEach(store.providers) { provider in
                     let visible = provider.windows.filter {
                         !settings.hiddenWindows.contains("\(provider.name)/\($0.label)")
                     }
                     if provider.error != nil || !visible.isEmpty {
-                        ProviderSection(provider: provider, windows: visible)
+                        ProviderSection(provider: provider, windows: visible, s: s)
                     }
                 }
             }
-            divider
+            Rectangle().fill(Theme.border).frame(height: 1)
             footer
         }
-        .padding(12)
-        .frame(width: 206, alignment: .leading)
-        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .padding(12 * s)
+        .frame(width: 206 * s, alignment: .leading)
+        .background(cardBg, in: RoundedRectangle(cornerRadius: 14 * s, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
+            RoundedRectangle(cornerRadius: 14 * s, style: .continuous)
                 .strokeBorder(Theme.border2, lineWidth: 1)
         )
         .overlay(alignment: .top) {
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(
-                    LinearGradient(
-                        colors: [Color.white.opacity(0.05), .clear],
-                        startPoint: .top, endPoint: .center
-                    )
-                )
+            RoundedRectangle(cornerRadius: 14 * s, style: .continuous)
+                .fill(LinearGradient(colors: [Color.white.opacity(0.05), .clear],
+                                     startPoint: .top, endPoint: .center))
                 .blendMode(.plusLighter)
                 .allowsHitTesting(false)
         }
+        .environment(\.colorScheme, scheme)
         .opacity(settings.opacity)
         .onReceive(ticker) { now = $0 }
     }
 
-    // MARK: Header
-
     private var header: some View {
-        HStack(spacing: 7) {
-            Circle()
-                .fill(Theme.success)
-                .frame(width: 5, height: 5)
+        HStack(spacing: 7 * s) {
+            Circle().fill(Theme.success).frame(width: 5 * s, height: 5 * s)
                 .shadow(color: Theme.success.opacity(0.6), radius: 3)
-            Text("AI QUOTA").monoLabel(size: 9.5, tracking: 1.6, color: Theme.muted)
-            Spacer(minLength: 6)
+            Text("AI QUOTA").monoLabel(size: 9.5 * s, tracking: 1.6 * s, color: Theme.muted)
+            Spacer(minLength: 6 * s)
             iconButton("arrow.clockwise", spinning: store.isRefreshing) { store.refresh() }
             iconButton("gearshape") { onSettings() }
             iconButton("xmark") { onClose() }
@@ -69,9 +68,9 @@ struct HUDView: View {
     private func iconButton(_ system: String, spinning: Bool = false, _ action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: system)
-                .font(.system(size: 10, weight: .medium))
+                .font(.system(size: 10 * s, weight: .medium))
                 .foregroundColor(Theme.muted)
-                .frame(width: 19, height: 19)
+                .frame(width: 19 * s, height: 19 * s)
                 .background(Color.white.opacity(0.001))
                 .rotationEffect(.degrees(spinning ? 360 : 0))
                 .animation(spinning ? .linear(duration: 0.8).repeatForever(autoreverses: false) : .default, value: spinning)
@@ -79,95 +78,79 @@ struct HUDView: View {
         .buttonStyle(IconButtonStyle())
     }
 
-    // MARK: Footer
-
-    private var divider: some View {
-        Rectangle().fill(Theme.border).frame(height: 1)
-    }
-
     private var footer: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: 6 * s) {
             if let last = store.lastUpdated {
                 Text("SYNCED \(timeString(last))")
-                    .font(.system(size: 9, weight: .bold, design: .monospaced))
-                    .tracking(0.8)
+                    .font(.system(size: 9 * s, weight: .bold, design: .monospaced))
+                    .tracking(0.8 * s)
                     .foregroundColor(Theme.muted2)
             }
-            Spacer(minLength: 6)
-            Text("⌘⇧L")
-                .font(.system(size: 9.5, weight: .medium, design: .monospaced))
+            Spacer(minLength: 6 * s)
+            Text(settings.hotKeyDisplay)
+                .font(.system(size: 9.5 * s, weight: .medium, design: .monospaced))
                 .foregroundColor(Theme.muted2)
-                .padding(.horizontal, 4.5)
-                .padding(.vertical, 1)
-                .overlay(RoundedRectangle(cornerRadius: 4).strokeBorder(Theme.border2, lineWidth: 1))
+                .padding(.horizontal, 4.5 * s)
+                .padding(.vertical, 1 * s)
+                .overlay(RoundedRectangle(cornerRadius: 4 * s).strokeBorder(Theme.border2, lineWidth: 1))
         }
     }
 
     private func timeString(_ date: Date) -> String {
-        let f = DateFormatter()
-        f.dateFormat = "HH:mm"
+        let f = DateFormatter(); f.dateFormat = "HH:mm"
         return f.string(from: date)
     }
 }
 
-// MARK: - Provider block
-
 private struct ProviderSection: View {
     let provider: ProviderQuota
     let windows: [QuotaWindow]
+    let s: CGFloat
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 7) {
+        VStack(alignment: .leading, spacing: 7 * s) {
             Text(provider.name.uppercased())
-                .monoLabel(size: 9, tracking: 1.8, color: Theme.muted2)
-
+                .monoLabel(size: 9 * s, tracking: 1.8 * s, color: Theme.muted2)
             if let error = provider.error {
-                HStack(spacing: 5) {
-                    Image(systemName: "exclamationmark.triangle.fill")
-                        .font(.system(size: 8.5))
-                    Text(error)
-                        .font(.system(size: 10.5, weight: .medium))
+                HStack(spacing: 5 * s) {
+                    Image(systemName: "exclamationmark.triangle.fill").font(.system(size: 8.5 * s))
+                    Text(error).font(.system(size: 10.5 * s, weight: .medium))
                 }
                 .foregroundColor(Theme.warning)
             } else {
                 ForEach(windows) { window in
-                    QuotaRow(window: window)
+                    QuotaRow(window: window, s: s)
                 }
             }
         }
     }
 }
 
-// MARK: - One quota window
-
 private struct QuotaRow: View {
     let window: QuotaWindow
+    let s: CGFloat
 
     private var color: Color { Theme.quotaColor(remaining: window.remaining) }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack(alignment: .firstTextBaseline, spacing: 5) {
-                Text(window.label)
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundColor(Theme.inkDim)
-                Spacer(minLength: 6)
+        VStack(alignment: .leading, spacing: 4 * s) {
+            HStack(alignment: .firstTextBaseline, spacing: 5 * s) {
+                Text(window.label).font(.system(size: 11 * s, weight: .medium)).foregroundColor(Theme.inkDim)
+                Spacer(minLength: 6 * s)
                 (
                     Text("\(Int(window.remaining * 100))%")
-                        .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                        .font(.system(size: 11 * s, weight: .semibold, design: .monospaced))
                         .foregroundColor(color)
                     +
                     Text(" left")
-                        .font(.system(size: 8.5, weight: .medium, design: .monospaced))
+                        .font(.system(size: 8.5 * s, weight: .medium, design: .monospaced))
                         .foregroundColor(Theme.muted2)
                 )
                 if let cd = window.resetCountdown {
-                    Text(cd)
-                        .font(.system(size: 9.5, design: .monospaced))
-                        .foregroundColor(Theme.muted2)
+                    Text(cd).font(.system(size: 9.5 * s, design: .monospaced)).foregroundColor(Theme.muted2)
                 }
             }
-            ProgressBar(value: window.remaining, color: color)
+            ProgressBar(value: window.remaining, color: color, s: s)
         }
     }
 }
@@ -175,30 +158,26 @@ private struct QuotaRow: View {
 private struct ProgressBar: View {
     let value: Double
     let color: Color
+    let s: CGFloat
 
     var body: some View {
         GeometryReader { geo in
             ZStack(alignment: .leading) {
                 Capsule().fill(Theme.trackBg)
-                Capsule()
-                    .fill(color)
+                Capsule().fill(color)
                     .frame(width: max(3, geo.size.width * min(1, max(0, value))))
-                    .shadow(color: color.opacity(0.45), radius: 2.5, y: 0)
+                    .shadow(color: color.opacity(0.45), radius: 2.5)
             }
         }
-        .frame(height: 4)
+        .frame(height: 4 * s)
     }
 }
-
-// MARK: - Button style
 
 private struct IconButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .background(
-                RoundedRectangle(cornerRadius: 5)
-                    .fill(configuration.isPressed ? Theme.hoverFill : Color.clear)
-            )
+            .background(RoundedRectangle(cornerRadius: 5)
+                .fill(configuration.isPressed ? Theme.hoverFill : Color.clear))
             .contentShape(Rectangle())
             .opacity(configuration.isPressed ? 0.7 : 1)
     }

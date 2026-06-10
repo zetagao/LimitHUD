@@ -19,6 +19,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             onSettings: { [weak self] in self?.openSettings() }
         )
         setupStatusItem()
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(panelMoved),
+            name: NSWindow.didMoveNotification, object: panel)
         showPanel()
 
         hotKey = HotKeyManager { [weak self] in self?.togglePanel() }
@@ -144,8 +147,32 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func showPanel() {
-        positionUnderStatusItem()
+        positionPanel()
         panel.orderFront(nil)
+    }
+
+    @objc private func panelMoved() {
+        guard Settings.shared.rememberPosition, panel.isVisible else { return }
+        let f = panel.frame
+        Settings.shared.cardPosX = f.origin.x
+        Settings.shared.cardPosTop = f.origin.y + f.size.height // top-left, stable across resizes
+        Settings.shared.cardPosSet = true
+    }
+
+    /// Restore the remembered position if we have one, else anchor under the icon.
+    private func positionPanel() {
+        let s = Settings.shared
+        if s.rememberPosition, s.cardPosSet {
+            var x = s.cardPosX
+            let y = s.cardPosTop - panel.frame.size.height
+            if let screen = NSScreen.main {
+                let vf = screen.visibleFrame
+                x = min(max(x, vf.minX), vf.maxX - panel.frame.size.width)
+            }
+            panel.setFrameOrigin(NSPoint(x: x, y: y))
+        } else {
+            positionUnderStatusItem()
+        }
     }
 
     // MARK: Placement

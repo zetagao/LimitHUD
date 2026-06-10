@@ -26,6 +26,15 @@ struct SettingsView: View {
                     Toggle("Recovery reminder", isOn: $settings.recoveryEnabled)
                     Toggle("System notifications", isOn: $settings.notificationsEnabled)
                     Toggle("Sound", isOn: $settings.soundEnabled)
+                    Toggle("Quiet hours", isOn: $settings.dndEnabled)
+                    if settings.dndEnabled {
+                        HStack(spacing: 8) {
+                            Text("From").foregroundColor(Theme.inkDim)
+                            hourPicker($settings.dndStart)
+                            Text("to").foregroundColor(Theme.inkDim)
+                            hourPicker($settings.dndEnd)
+                        }
+                    }
                 }
 
                 group("SOURCES") {
@@ -79,13 +88,19 @@ struct SettingsView: View {
                 group("CARD") {
                     HotKeyRecorder()
                     Toggle("Launch at login", isOn: $settings.launchAtLogin)
-                    HStack(spacing: 12) {
-                        Text("Opacity").foregroundColor(Theme.inkDim)
-                        Slider(value: $settings.opacity, in: 0.4...1.0)
-                        Text("\(Int(settings.opacity * 100))%")
-                            .font(.system(size: 11, design: .monospaced))
-                            .foregroundColor(Theme.muted2)
-                            .frame(width: 34, alignment: .trailing)
+                    Toggle("Remember position", isOn: $settings.rememberPosition)
+                    sliderRow("Size", value: $settings.cardScale, range: 0.8...1.6) {
+                        "\(Int(settings.cardScale * 100))%"
+                    }
+                    sliderRow("Opacity", value: $settings.opacity, range: 0.4...1.0) {
+                        "\(Int(settings.opacity * 100))%"
+                    }
+                    Toggle("Custom background", isOn: $settings.cardBgCustom)
+                    if settings.cardBgCustom {
+                        ColorPicker("Background color", selection: Binding(
+                            get: { settings.cardBgColor },
+                            set: { settings.cardBgColor = $0 }
+                        ), supportsOpacity: true)
                     }
                 }
 
@@ -107,6 +122,28 @@ struct SettingsView: View {
     /// All currently-available window keys ("Provider/Label") across providers.
     private var allWindows: [String] {
         store.providers.flatMap { p in p.windows.map { "\(p.name)/\($0.label)" } }
+    }
+
+    private func hourPicker(_ value: Binding<Int>) -> some View {
+        Picker("", selection: value) {
+            ForEach(0..<24, id: \.self) { h in
+                Text(String(format: "%02d:00", h)).tag(h)
+            }
+        }
+        .labelsHidden()
+        .frame(width: 84)
+    }
+
+    private func sliderRow(_ label: String, value: Binding<Double>,
+                           range: ClosedRange<Double>, _ text: @escaping () -> String) -> some View {
+        HStack(spacing: 12) {
+            Text(label).foregroundColor(Theme.inkDim)
+            Slider(value: value, in: range)
+            Text(text())
+                .font(.system(size: 11, design: .monospaced))
+                .foregroundColor(Theme.muted2)
+                .frame(width: 38, alignment: .trailing)
+        }
     }
 
     @ViewBuilder

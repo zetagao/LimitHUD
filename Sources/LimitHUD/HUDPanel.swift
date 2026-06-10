@@ -1,19 +1,32 @@
 import AppKit
 import SwiftUI
 
-/// A borderless, always-on-top, draggable floating panel that hosts the SwiftUI card.
-/// Sizes itself to the card's fitting size and does not steal focus from other apps.
+/// NSHostingView that keeps its window sized to the SwiftUI content
+/// (so scaling the card or changing rows resizes the panel), anchored top-left.
+final class AutoSizingHostingView<V: View>: NSHostingView<V> {
+    override func layout() {
+        super.layout()
+        guard let win = window else { return }
+        let target = fittingSize
+        guard target.width > 1, target.height > 1, win.frame.size != target else { return }
+        var f = win.frame
+        f.origin.y += f.size.height - target.height // keep the top edge fixed
+        f.size = target
+        win.setFrame(f, display: true)
+    }
+}
+
+/// Borderless, always-on-top, draggable floating panel hosting the SwiftUI card.
 final class HUDPanel: NSPanel {
     init(store: QuotaStore, onClose: @escaping () -> Void, onSettings: @escaping () -> Void) {
         super.init(
-            contentRect: NSRect(x: 0, y: 0, width: 280, height: 240),
+            contentRect: NSRect(x: 0, y: 0, width: 220, height: 240),
             styleMask: [.borderless, .nonactivatingPanel, .fullSizeContentView],
             backing: .buffered,
             defer: false
         )
 
         isFloatingPanel = true
-        // Stay above all app windows, across every Space and over other apps' full-screen.
         level = .statusBar
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary]
         isMovableByWindowBackground = true
@@ -25,13 +38,10 @@ final class HUDPanel: NSPanel {
         hidesOnDeactivate = false
 
         let root = HUDView(store: store, onClose: onClose, onSettings: onSettings)
-        let host = NSHostingView(rootView: root)
+        let host = AutoSizingHostingView(rootView: root)
         host.translatesAutoresizingMaskIntoConstraints = false
         contentView = host
-
-        // size the panel to the SwiftUI card
-        let fitting = host.fittingSize
-        setContentSize(fitting)
+        setContentSize(host.fittingSize)
     }
 
     override var canBecomeKey: Bool { true }
