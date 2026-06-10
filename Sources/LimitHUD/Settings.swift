@@ -19,9 +19,12 @@ final class Settings: ObservableObject {
     @Published var monitorClaude: Bool      { didSet { d.set(monitorClaude, forKey: "monitorClaude") } }
     @Published var monitorCodex: Bool       { didSet { d.set(monitorCodex, forKey: "monitorCodex") } }
 
-    // Cookie source: which browser / profile ("auto" = try all installed)
-    @Published var cookieBrowser: String    { didSet { d.set(cookieBrowser, forKey: "cookieBrowser") } }
-    @Published var cookieProfile: String    { didSet { d.set(cookieProfile, forKey: "cookieProfile") } }
+    // Cookie source per provider (so Claude & Codex can live in different
+    // browsers/profiles / Google accounts). "auto" = try all installed.
+    @Published var claudeBrowser: String    { didSet { d.set(claudeBrowser, forKey: "claudeBrowser") } }
+    @Published var claudeProfile: String    { didSet { d.set(claudeProfile, forKey: "claudeProfile") } }
+    @Published var codexBrowser: String     { didSet { d.set(codexBrowser, forKey: "codexBrowser") } }
+    @Published var codexProfile: String     { didSet { d.set(codexProfile, forKey: "codexProfile") } }
 
     // Refresh
     @Published var refreshInterval: Int     { didSet { d.set(refreshInterval, forKey: "refreshInterval") } } // seconds
@@ -84,8 +87,10 @@ final class Settings: ObservableObject {
         notificationsEnabled = bool("notificationsEnabled", true)
         monitorClaude        = bool("monitorClaude", true)
         monitorCodex         = bool("monitorCodex", true)
-        cookieBrowser        = ud.string(forKey: "cookieBrowser") ?? "auto"
-        cookieProfile        = ud.string(forKey: "cookieProfile") ?? "auto"
+        claudeBrowser        = ud.string(forKey: "claudeBrowser") ?? "auto"
+        claudeProfile        = ud.string(forKey: "claudeProfile") ?? "auto"
+        codexBrowser         = ud.string(forKey: "codexBrowser") ?? "auto"
+        codexProfile         = ud.string(forKey: "codexProfile") ?? "auto"
         refreshInterval      = int("refreshInterval", 60)
         opacity              = dbl("opacity", 1.0)
         cardScale            = dbl("cardScale", 1.0)

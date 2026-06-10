@@ -6,10 +6,31 @@ struct SettingsView: View {
     @ObservedObject var settings = Settings.shared
     private let reader = BrowserCookieReader()
 
-    private func selectedProfiles() -> [String] {
-        guard let b = BrowserCookieReader.supported.first(where: { $0.id == settings.cookieBrowser })
+    private func profilesFor(_ browserId: String) -> [String] {
+        guard let b = BrowserCookieReader.supported.first(where: { $0.id == browserId })
         else { return [] }
         return reader.profiles(for: b)
+    }
+
+    @ViewBuilder
+    private func browserRow(_ title: String, browser: Binding<String>, profile: Binding<String>) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title).font(.system(size: 11, weight: .semibold)).foregroundColor(Theme.inkDim)
+            Picker("Browser", selection: browser) {
+                Text("Auto").tag("auto")
+                ForEach(reader.installedBrowsers()) { b in Text(b.name).tag(b.id) }
+            }
+            .labelsHidden()
+            .onChange(of: browser.wrappedValue) { _ in profile.wrappedValue = "auto" }
+            let profs = profilesFor(browser.wrappedValue)
+            if browser.wrappedValue != "auto", !profs.isEmpty {
+                Picker("Profile", selection: profile) {
+                    Text("Auto").tag("auto")
+                    ForEach(profs, id: \.self) { p in Text(p == "." ? "Main" : p).tag(p) }
+                }
+                .labelsHidden()
+            }
+        }
     }
 
     var body: some View {
@@ -43,23 +64,16 @@ struct SettingsView: View {
                 }
 
                 group("BROWSER") {
-                    Picker("Browser", selection: $settings.cookieBrowser) {
-                        Text("Auto").tag("auto")
-                        ForEach(reader.installedBrowsers()) { b in Text(b.name).tag(b.id) }
+                    if settings.monitorClaude {
+                        browserRow("Claude", browser: $settings.claudeBrowser, profile: $settings.claudeProfile)
                     }
-                    .onChange(of: settings.cookieBrowser) { _ in settings.cookieProfile = "auto" }
-                    let profs = selectedProfiles()
-                    if settings.cookieBrowser != "auto", !profs.isEmpty {
-                        Picker("Profile", selection: $settings.cookieProfile) {
-                            Text("Auto").tag("auto")
-                            ForEach(profs, id: \.self) { p in
-                                Text(p == "." ? "Main" : p).tag(p)
-                            }
-                        }
+                    if settings.monitorCodex {
+                        browserRow("Codex", browser: $settings.codexBrowser, profile: $settings.codexProfile)
                     }
-                    Text("Where you're signed into claude.ai / chatgpt.com")
+                    Text("Each can read a different browser / profile — handy when Claude and ChatGPT use different Google accounts.")
                         .font(.system(size: 11))
                         .foregroundColor(Theme.muted2)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
 
                 if !allWindows.isEmpty {

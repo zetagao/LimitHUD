@@ -50,7 +50,7 @@
 ### Settings (⚙ / right-click → Settings… / ⌘,)
 - **Reminders** — alert on/off, threshold %, recovery reminder, notifications, sound, quiet hours.
 - **Sources** — Claude / Codex toggles.
-- **Browser** — which browser / profile to read cookies from (Auto by default).
+- **Browser** — read Claude and Codex from **different browsers / profiles** (great when they're under different Google accounts).
 - **Card content** — per-window toggles to choose exactly what shows.
 - **Refresh** — 30s / 1min / 5min.
 - **Card** — custom global hotkey, **size**, **custom background color**, remember position, launch at login, opacity.
@@ -140,7 +140,7 @@ MIT — see [LICENSE](LICENSE).
 
 **提醒**：低额阈值告警（默认 <20%）、额度恢复提醒、边沿检测不刷屏、通知+声音开关、**勿扰时段**。
 
-**设置**：REMINDERS（告警/阈值/恢复/通知/声音/勿扰时段）、SOURCES（Claude/Codex 开关）、BROWSER（选浏览器/profile，默认 Auto）、CARD CONTENT（逐窗口自定义显示）、REFRESH（间隔）、CARD（自定义快捷键/缩放/背景色/位置记忆/开机自启/透明度）。
+**设置**：REMINDERS（告警/阈值/恢复/通知/声音/勿扰时段）、SOURCES（Claude/Codex 开关）、BROWSER（Claude 与 Codex 可各自选不同浏览器/profile，适配两个不同 Google 账号）、CARD CONTENT（逐窗口自定义显示）、REFRESH（间隔）、CARD（自定义快捷键/缩放/背景色/位置记忆/开机自启/透明度）。
 
 ## 隐私与安全
 

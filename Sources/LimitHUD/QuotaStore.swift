@@ -26,10 +26,10 @@ final class QuotaStore: ObservableObject {
             .sink { [weak self] _ in self?.refresh() }.store(in: &cancellables)
         Settings.shared.$monitorCodex.dropFirst()
             .sink { [weak self] _ in self?.refresh() }.store(in: &cancellables)
-        Settings.shared.$cookieBrowser.dropFirst()
-            .sink { [weak self] _ in self?.refresh() }.store(in: &cancellables)
-        Settings.shared.$cookieProfile.dropFirst()
-            .sink { [weak self] _ in self?.refresh() }.store(in: &cancellables)
+        for pub in [Settings.shared.$claudeBrowser, Settings.shared.$claudeProfile,
+                    Settings.shared.$codexBrowser, Settings.shared.$codexProfile] {
+            pub.dropFirst().sink { [weak self] _ in self?.refresh() }.store(in: &cancellables)
+        }
     }
 
     func startTimer(interval: TimeInterval) {
@@ -44,9 +44,10 @@ final class QuotaStore: ObservableObject {
         isRefreshing = true
         Task { @MainActor in
             let s = Settings.shared
-            let prefs = CookiePrefs(browser: s.cookieBrowser, profile: s.cookieProfile)
-            async let claude: ProviderQuota? = s.monitorClaude ? ClaudeProvider.fetch(prefs: prefs) : nil
-            async let codex:  ProviderQuota? = s.monitorCodex  ? CodexProvider.fetch(prefs: prefs)  : nil
+            let claudePrefs = CookiePrefs(browser: s.claudeBrowser, profile: s.claudeProfile)
+            let codexPrefs  = CookiePrefs(browser: s.codexBrowser,  profile: s.codexProfile)
+            async let claude: ProviderQuota? = s.monitorClaude ? ClaudeProvider.fetch(prefs: claudePrefs) : nil
+            async let codex:  ProviderQuota? = s.monitorCodex  ? CodexProvider.fetch(prefs: codexPrefs)  : nil
 
             var result: [ProviderQuota] = []
             if let c = await claude { result.append(c) }
