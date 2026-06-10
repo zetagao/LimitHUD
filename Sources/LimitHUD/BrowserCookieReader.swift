@@ -136,9 +136,26 @@ struct BrowserCookieReader {
     }
 
     private func readAndDecrypt(dbPath: String, key: Data, suffix: String) throws -> [String: String] {
+        // Copy the DB + its WAL/SHM to temp, then read the copy. Reading the live
+        // file with immutable=1 ignores the WAL, so a freshly-rotated session
+        // cookie (still in -wal) would be missed → stale/expired token.
+        let fm = FileManager.default
+        let tmp = NSTemporaryDirectory() + "lh-cookies-\(UUID().uuidString).sqlite"
+        defer {
+            for ext in ["", "-wal", "-shm"] { try? fm.removeItem(atPath: tmp + ext) }
+        }
+        do {
+            try fm.copyItem(atPath: dbPath, toPath: tmp)
+            for ext in ["-wal", "-shm"] where fm.fileExists(atPath: dbPath + ext) {
+                try? fm.copyItem(atPath: dbPath + ext, toPath: tmp + ext)
+            }
+        } catch {
+            throw CookieError.sqlite("copy failed: \(error.localizedDescription)")
+        }
+
         var db: OpaquePointer?
-        guard sqlite3_open_v2("file:\(dbPath)?immutable=1", &db,
-                              SQLITE_OPEN_READONLY | SQLITE_OPEN_URI, nil) == SQLITE_OK else {
+        // Open read-write on our throwaway copy so SQLite applies the WAL.
+        guard sqlite3_open_v2(tmp, &db, SQLITE_OPEN_READWRITE, nil) == SQLITE_OK else {
             let msg = db.map { String(cString: sqlite3_errmsg($0)) } ?? "open failed"
             sqlite3_close(db)
             throw CookieError.sqlite(msg)

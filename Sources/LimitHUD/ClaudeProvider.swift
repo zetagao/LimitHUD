@@ -31,8 +31,10 @@ enum ClaudeProvider {
             log("claude usage raw: \(string(data))")
             return parse(data)
         } catch let e as CookieError {
+            log("claude cookie error: \(e.description)")
             return err(e.description)
         } catch {
+            log("claude read failed: \(error)")
             return err("Read failed")
         }
     }
