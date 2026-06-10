@@ -89,6 +89,7 @@ LimitHUD reads your **Chrome session cookies locally** to call each service's ow
 ./build.sh            # compile + sign  →  LimitHUD.app
 ./build.sh run        # build and launch
 ./build.sh install    # build, install to /Applications, launch
+./build.sh release v1.1   # build + zip + publish to a GitHub release (omit tag to re-upload latest)
 ```
 
 The self-signed cert keeps the app's code identity stable across rebuilds, so the Keychain "Always Allow" sticks.

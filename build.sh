@@ -58,3 +58,28 @@ if [[ "${1:-}" == "install" ]]; then
     open "$HOME/Applications/${APP}"
   fi
 fi
+
+# ./build.sh release [tag]
+#   no tag  → re-upload the zip to the most recent release (after a fix)
+#   tag     → upload to that release, creating it (with auto notes) if missing
+if [[ "${1:-}" == "release" ]]; then
+  TAG="${2:-}"
+  ZIP="${APP_NAME}.zip"
+  echo "==> packaging ${ZIP} (signature-preserving)"
+  rm -f "${ZIP}"
+  ditto -c -k --keepParent "${APP}" "${ZIP}"
+
+  if [[ -z "${TAG}" ]]; then
+    TAG="$(gh release list --limit 1 --json tagName --jq '.[0].tagName' 2>/dev/null)"
+    [[ -z "${TAG}" ]] && { echo "no existing release — pass a tag, e.g. ./build.sh release v1.0"; exit 1; }
+    echo "==> uploading to latest release ${TAG}"
+    gh release upload "${TAG}" "${ZIP}" --clobber
+  elif gh release view "${TAG}" >/dev/null 2>&1; then
+    echo "==> uploading to existing release ${TAG}"
+    gh release upload "${TAG}" "${ZIP}" --clobber
+  else
+    echo "==> creating release ${TAG}"
+    gh release create "${TAG}" "${ZIP}" --title "${APP_NAME} ${TAG}" --generate-notes
+  fi
+  echo "✓ released ${ZIP} → ${TAG}"
+fi
