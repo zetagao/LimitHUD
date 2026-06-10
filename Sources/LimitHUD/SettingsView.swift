@@ -4,6 +4,13 @@ import SwiftUI
 struct SettingsView: View {
     @ObservedObject var store: QuotaStore
     @ObservedObject var settings = Settings.shared
+    private let reader = BrowserCookieReader()
+
+    private func selectedProfiles() -> [String] {
+        guard let b = BrowserCookieReader.supported.first(where: { $0.id == settings.cookieBrowser })
+        else { return [] }
+        return reader.profiles(for: b)
+    }
 
     var body: some View {
         ScrollView {
@@ -24,6 +31,26 @@ struct SettingsView: View {
                 group("SOURCES") {
                     Toggle("Claude", isOn: $settings.monitorClaude)
                     Toggle("Codex", isOn: $settings.monitorCodex)
+                }
+
+                group("BROWSER") {
+                    Picker("Browser", selection: $settings.cookieBrowser) {
+                        Text("Auto").tag("auto")
+                        ForEach(reader.installedBrowsers()) { b in Text(b.name).tag(b.id) }
+                    }
+                    .onChange(of: settings.cookieBrowser) { _ in settings.cookieProfile = "auto" }
+                    let profs = selectedProfiles()
+                    if settings.cookieBrowser != "auto", !profs.isEmpty {
+                        Picker("Profile", selection: $settings.cookieProfile) {
+                            Text("Auto").tag("auto")
+                            ForEach(profs, id: \.self) { p in
+                                Text(p == "." ? "Main" : p).tag(p)
+                            }
+                        }
+                    }
+                    Text("Where you're signed into claude.ai / chatgpt.com")
+                        .font(.system(size: 11))
+                        .foregroundColor(Theme.muted2)
                 }
 
                 if !allWindows.isEmpty {

@@ -18,6 +18,10 @@ final class Settings: ObservableObject {
     @Published var monitorClaude: Bool      { didSet { d.set(monitorClaude, forKey: "monitorClaude") } }
     @Published var monitorCodex: Bool       { didSet { d.set(monitorCodex, forKey: "monitorCodex") } }
 
+    // Cookie source: which browser / profile ("auto" = try all installed)
+    @Published var cookieBrowser: String    { didSet { d.set(cookieBrowser, forKey: "cookieBrowser") } }
+    @Published var cookieProfile: String    { didSet { d.set(cookieProfile, forKey: "cookieProfile") } }
+
     // Refresh
     @Published var refreshInterval: Int     { didSet { d.set(refreshInterval, forKey: "refreshInterval") } } // seconds
 
@@ -46,6 +50,8 @@ final class Settings: ObservableObject {
         notificationsEnabled = bool("notificationsEnabled", true)
         monitorClaude        = bool("monitorClaude", true)
         monitorCodex         = bool("monitorCodex", true)
+        cookieBrowser        = ud.string(forKey: "cookieBrowser") ?? "auto"
+        cookieProfile        = ud.string(forKey: "cookieProfile") ?? "auto"
         refreshInterval      = int("refreshInterval", 60)
         opacity              = dbl("opacity", 1.0)
         launchAtLogin        = bool("launchAtLogin", false)

@@ -4,10 +4,10 @@ import Foundation
 /// Never throws — failures are surfaced as `ProviderQuota.error` for the card.
 enum ClaudeProvider {
 
-    static func fetch() async -> ProviderQuota {
+    static func fetch(prefs: CookiePrefs) async -> ProviderQuota {
         do {
-            let cookies = try ChromeCookieReader().cookies(forHostSuffix: "claude.ai")
-            guard !cookies.isEmpty else { return err("Not signed in (Chrome)") }
+            let cookies = try BrowserCookieReader().cookies(forHostSuffix: "claude.ai", prefs: prefs)
+            guard !cookies.isEmpty else { return err("Not signed in") }
             guard let org = cookies["lastActiveOrg"], !org.isEmpty else { return err("No org ID") }
 
             let cookieHeader = cookies.map { "\($0.key)=\($0.value)" }.joined(separator: "; ")

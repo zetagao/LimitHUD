@@ -5,10 +5,10 @@ import Foundation
 /// Parsing is defensive + logs raw JSON, since the usage shape is verified at runtime.
 enum CodexProvider {
 
-    static func fetch() async -> ProviderQuota {
+    static func fetch(prefs: CookiePrefs) async -> ProviderQuota {
         do {
-            let cookies = try ChromeCookieReader().cookies(forHostSuffix: "chatgpt.com")
-            guard !cookies.isEmpty else { return err("Not signed in (Chrome)") }
+            let cookies = try BrowserCookieReader().cookies(forHostSuffix: "chatgpt.com", prefs: prefs)
+            guard !cookies.isEmpty else { return err("Not signed in") }
             let cookieHeader = cookies.map { "\($0.key)=\($0.value)" }.joined(separator: "; ")
 
             guard let token = try await accessToken(cookieHeader: cookieHeader) else {
