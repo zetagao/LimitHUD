@@ -31,6 +31,7 @@ struct HUDView: View {
         }
         return CardPalette(ink: Theme.ink, dim: Theme.inkDim, muted: Theme.muted, muted2: Theme.muted2)
     }
+    private var barColor: Color? { settings.cardBarCustom ? settings.cardBarColor : nil }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 11 * s) {
@@ -41,7 +42,7 @@ struct HUDView: View {
                         !settings.hiddenWindows.contains("\(provider.name)/\($0.label)")
                     }
                     if provider.error != nil || !visible.isEmpty {
-                        ProviderSection(provider: provider, windows: visible, s: s, p: p)
+                        ProviderSection(provider: provider, windows: visible, s: s, p: p, bar: barColor)
                     }
                 }
             }
@@ -121,6 +122,7 @@ private struct ProviderSection: View {
     let windows: [QuotaWindow]
     let s: CGFloat
     let p: CardPalette
+    let bar: Color?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 7 * s) {
@@ -134,7 +136,7 @@ private struct ProviderSection: View {
                 .foregroundColor(Theme.warning)
             } else {
                 ForEach(windows) { window in
-                    QuotaRow(window: window, s: s, p: p)
+                    QuotaRow(window: window, s: s, p: p, bar: bar)
                 }
             }
         }
@@ -145,8 +147,9 @@ private struct QuotaRow: View {
     let window: QuotaWindow
     let s: CGFloat
     let p: CardPalette
+    let bar: Color?
 
-    private var color: Color { Theme.quotaColor(remaining: window.remaining) }
+    private var color: Color { bar ?? Theme.quotaColor(remaining: window.remaining) }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4 * s) {

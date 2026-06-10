@@ -71,6 +71,22 @@ final class Settings: ObservableObject {
         }
     }
 
+    // Custom progress-bar color (when on, replaces the green/amber/red ramp)
+    @Published var cardBarCustom: Bool      { didSet { d.set(cardBarCustom, forKey: "cardBarCustom") } }
+    @Published var cardBarR: Double         { didSet { d.set(cardBarR, forKey: "cardBarR") } }
+    @Published var cardBarG: Double         { didSet { d.set(cardBarG, forKey: "cardBarG") } }
+    @Published var cardBarB: Double         { didSet { d.set(cardBarB, forKey: "cardBarB") } }
+
+    var cardBarColor: Color {
+        get { Color(.sRGB, red: cardBarR, green: cardBarG, blue: cardBarB, opacity: 1) }
+        set {
+            let ns = NSColor(newValue).usingColorSpace(.sRGB) ?? .green
+            cardBarR = Double(ns.redComponent)
+            cardBarG = Double(ns.greenComponent)
+            cardBarB = Double(ns.blueComponent)
+        }
+    }
+
     // Hotkey (Carbon virtual keycode + Carbon modifier mask)
     @Published var hotKeyKeyCode: Int       { didSet { d.set(hotKeyKeyCode, forKey: "hotKeyKeyCode") } }
     @Published var hotKeyModifiers: Int     { didSet { d.set(hotKeyModifiers, forKey: "hotKeyModifiers") } }
@@ -122,6 +138,11 @@ final class Settings: ObservableObject {
         cardFgR              = dbl("cardFgR", 0.957) // default ≈ #F4F4F5
         cardFgG              = dbl("cardFgG", 0.957)
         cardFgB              = dbl("cardFgB", 0.961)
+
+        cardBarCustom        = bool("cardBarCustom", false)
+        cardBarR             = dbl("cardBarR", 0.204) // default ≈ #34C982
+        cardBarG             = dbl("cardBarG", 0.788)
+        cardBarB             = dbl("cardBarB", 0.510)
 
         // default ⌘⇧L : keyCode 37 (L), modifiers cmdKey(256)|shiftKey(512)
         hotKeyKeyCode        = int("hotKeyKeyCode", 37)

@@ -131,6 +131,13 @@ struct SettingsView: View {
                             set: { settings.cardFgColor = $0 }
                         ))
                     }
+                    Toggle("Custom bar color", isOn: $settings.cardBarCustom)
+                    if settings.cardBarCustom {
+                        ColorPicker("Bar color", selection: Binding(
+                            get: { settings.cardBarColor },
+                            set: { settings.cardBarColor = $0 }
+                        ))
+                    }
                 }
 
                 Text("LimitHUD · \(settings.hotKeyDisplay) to toggle the card")
