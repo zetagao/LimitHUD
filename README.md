@@ -3,6 +3,12 @@
   <h1>LimitHUD</h1>
   <p>A floating macOS HUD that keeps a live eye on your <b>Claude</b> and <b>Codex (ChatGPT)</b> usage quotas — and warns you before you run out.</p>
   <p>Stays out of your menu bar · floats above everything · fully customizable reminders & looks.</p>
+  <p>
+    <img src="https://img.shields.io/badge/license-MIT-green" alt="MIT License">
+    <img src="https://img.shields.io/badge/macOS-13%2B-black?logo=apple" alt="macOS 13+">
+    <img src="https://img.shields.io/badge/Swift-5-orange?logo=swift&logoColor=white" alt="Swift 5">
+    <img src="https://img.shields.io/badge/Xcode-not%20required-success" alt="No Xcode required">
+  </p>
 </div>
 
 ---
