@@ -71,6 +71,17 @@ LimitHUD reads your **Chrome session cookies locally** to call each service's ow
 - Signed into `claude.ai` and/or `chatgpt.com` in **Google Chrome**
 - A Swift toolchain to build (Xcode **or** Command Line Tools — full Xcode not required)
 
+## Download & run (no build)
+
+1. Download **LimitHUD.zip** from the [latest release](https://github.com/zetagao/LimitHUD/releases/latest).
+2. Unzip and drag **LimitHUD.app** into your **Applications** folder.
+3. **First launch** — the app is signed by an independent developer (not via the App Store), so macOS blocks it once:
+   - Double-click it. When macOS says it can't verify the developer, open **System Settings → Privacy & Security**, scroll to the bottom, and click **Open Anyway**, then confirm. *(On older macOS you can instead Control-click the app → **Open**.)*
+4. Click **Allow** when macOS asks for **Keychain** access (to read Chrome's cookie key) and for **Notifications**.
+5. Make sure you're signed into `claude.ai` / `chatgpt.com` in **Google Chrome**.
+
+> The app is open source and code-signed, but not Apple-notarized — that one-time warning is expected. Prefer to audit and build it yourself? See below.
+
 ## Build & Install
 
 ```bash
@@ -134,6 +145,17 @@ LimitHUD 在**本地**读取 Chrome 登录 cookie，仅用于调用各服务自�
 - macOS 13+
 - 用 **Google Chrome** 登录了 `claude.ai` 和/或 `chatgpt.com`
 - 有 Swift 工具链（Xcode 或 Command Line Tools，无需完整 Xcode）
+
+## 下载即用（免编译）
+
+1. 在 [最新 release](https://github.com/zetagao/LimitHUD/releases/latest) 下载 **LimitHUD.zip**。
+2. 解压，把 **LimitHUD.app** 拖进**应用程序**文件夹。
+3. **首次打开** —— app 由独立开发者签名（非 App Store），macOS 会拦一次：
+   - 双击它。提示「无法验证开发者」后，打开**系统设置 → 隐私与安全性**，拉到底部点 **仍要打开**，确认。*（旧版 macOS 可改为右键 app → 打开。）*
+4. macOS 弹**钥匙串**授权（读 Chrome 的 cookie 密钥）和**通知**授权时，点**允许**。
+5. 确保已用 **Google Chrome** 登录 `claude.ai` / `chatgpt.com`。
+
+> app 已开源、已签名，只是没做 Apple 公证，那一次性警告是正常的。想审计代码自己编译？见下。
 
 ## 构建 / 安装
 

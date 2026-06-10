@@ -1,6 +1,7 @@
 # Build output
 .build/
 *.app
+*.zip
 
 # Generated icon intermediate (AppIcon.icns is committed for convenience)
 AppIcon.iconset/
