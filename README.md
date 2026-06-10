@@ -80,8 +80,8 @@ LimitHUD reads your **browser's session cookies locally** to call each service's
 2. Unzip and drag **LimitHUD.app** into your **Applications** folder.
 3. **First launch** — the app is signed by an independent developer (not via the App Store), so macOS blocks it once:
    - Double-click it. When macOS says it can't verify the developer, open **System Settings → Privacy & Security**, scroll to the bottom, and click **Open Anyway**, then confirm. *(On older macOS you can instead Control-click the app → **Open**.)*
-4. Click **Allow** when macOS asks for **Keychain** access (to read Chrome's cookie key) and for **Notifications**.
-5. Make sure you're signed into `claude.ai` / `chatgpt.com` in **Google Chrome**.
+4. Click **Allow** when macOS asks for **Keychain** access (to read the browser's cookie key) and for **Notifications**.
+5. Make sure you're signed into `claude.ai` / `chatgpt.com` in a supported browser (Chrome, Brave, Edge, Arc, Vivaldi, Chromium, or Opera).
 
 > The app is open source and code-signed, but not Apple-notarized — that one-time warning is expected. Prefer to audit and build it yourself? See below.
 
