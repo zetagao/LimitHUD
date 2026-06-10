@@ -9,6 +9,8 @@
     <img src="https://img.shields.io/badge/Swift-5-orange?logo=swift&logoColor=white" alt="Swift 5">
     <img src="https://img.shields.io/badge/Xcode-not%20required-success" alt="No Xcode required">
   </p>
+  <br>
+  <img src="docs/screenshot.png" width="300" alt="LimitHUD floating card">
 </div>
 
 ---
