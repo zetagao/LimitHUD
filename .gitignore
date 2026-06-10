@@ -1,0 +1,18 @@
+# Build output
+.build/
+*.app
+
+# Generated icon intermediate (AppIcon.icns is committed for convenience)
+AppIcon.iconset/
+
+# macOS
+.DS_Store
+
+# Swift Package Manager
+Package.resolved
+.swiftpm/
+
+# Signing / secrets (never commit keys or certs)
+*.p12
+*.pem
+*.key
