@@ -12,6 +12,12 @@ struct SettingsView: View {
         return reader.profiles(for: b)
     }
 
+    private func profileLabel(_ browserId: String, _ profile: String) -> String {
+        guard let b = BrowserCookieReader.supported.first(where: { $0.id == browserId })
+        else { return profile }
+        return reader.profileDisplayName(b, profile)
+    }
+
     @ViewBuilder
     private func browserRow(_ title: String, browser: Binding<String>, profile: Binding<String>) -> some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -26,7 +32,9 @@ struct SettingsView: View {
             if browser.wrappedValue != "auto", !profs.isEmpty {
                 Picker("Profile", selection: profile) {
                     Text("Auto").tag("auto")
-                    ForEach(profs, id: \.self) { p in Text(p == "." ? "Main" : p).tag(p) }
+                    ForEach(profs, id: \.self) { p in
+                        Text(profileLabel(browser.wrappedValue, p)).tag(p)
+                    }
                 }
                 .labelsHidden()
             }
@@ -115,6 +123,13 @@ struct SettingsView: View {
                             get: { settings.cardBgColor },
                             set: { settings.cardBgColor = $0 }
                         ), supportsOpacity: true)
+                    }
+                    Toggle("Custom text color", isOn: $settings.cardFgCustom)
+                    if settings.cardFgCustom {
+                        ColorPicker("Text color", selection: Binding(
+                            get: { settings.cardFgColor },
+                            set: { settings.cardFgColor = $0 }
+                        ))
                     }
                 }
 

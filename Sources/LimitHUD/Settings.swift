@@ -55,6 +55,22 @@ final class Settings: ObservableObject {
     /// Perceived brightness of the custom background (0 dark … 1 light).
     var cardBgIsLight: Bool { (0.299 * cardBgR + 0.587 * cardBgG + 0.114 * cardBgB) > 0.55 }
 
+    // Custom text color (applies to neutral labels; % and bars stay semantic)
+    @Published var cardFgCustom: Bool       { didSet { d.set(cardFgCustom, forKey: "cardFgCustom") } }
+    @Published var cardFgR: Double          { didSet { d.set(cardFgR, forKey: "cardFgR") } }
+    @Published var cardFgG: Double          { didSet { d.set(cardFgG, forKey: "cardFgG") } }
+    @Published var cardFgB: Double          { didSet { d.set(cardFgB, forKey: "cardFgB") } }
+
+    var cardFgColor: Color {
+        get { Color(.sRGB, red: cardFgR, green: cardFgG, blue: cardFgB, opacity: 1) }
+        set {
+            let ns = NSColor(newValue).usingColorSpace(.sRGB) ?? .white
+            cardFgR = Double(ns.redComponent)
+            cardFgG = Double(ns.greenComponent)
+            cardFgB = Double(ns.blueComponent)
+        }
+    }
+
     // Hotkey (Carbon virtual keycode + Carbon modifier mask)
     @Published var hotKeyKeyCode: Int       { didSet { d.set(hotKeyKeyCode, forKey: "hotKeyKeyCode") } }
     @Published var hotKeyModifiers: Int     { didSet { d.set(hotKeyModifiers, forKey: "hotKeyModifiers") } }
@@ -101,6 +117,11 @@ final class Settings: ObservableObject {
         cardBgG              = dbl("cardBgG", 0.086)
         cardBgB              = dbl("cardBgB", 0.094)
         cardBgA              = dbl("cardBgA", 1.0)
+
+        cardFgCustom         = bool("cardFgCustom", false)
+        cardFgR              = dbl("cardFgR", 0.957) // default ≈ #F4F4F5
+        cardFgG              = dbl("cardFgG", 0.957)
+        cardFgB              = dbl("cardFgB", 0.961)
 
         // default ⌘⇧L : keyCode 37 (L), modifiers cmdKey(256)|shiftKey(512)
         hotKeyKeyCode        = int("hotKeyKeyCode", 37)

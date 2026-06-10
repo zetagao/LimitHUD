@@ -54,6 +54,23 @@ struct BrowserCookieReader {
         Self.supported.filter { !profiles(for: $0).isEmpty }
     }
 
+    /// Friendly profile label from the browser's "Local State" (name + account email),
+    /// so users can tell e.g. a "Work" Google account from "Personal".
+    func profileDisplayName(_ b: Browser, _ profile: String) -> String {
+        if profile == "." { return "Main" }
+        let lsPath = "\(appSupport)/\(b.base)/Local State"
+        guard let data = FileManager.default.contents(atPath: lsPath),
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let cache = (json["profile"] as? [String: Any])?["info_cache"] as? [String: Any],
+              let info = cache[profile] as? [String: Any] else { return profile }
+        let name = (info["name"] as? String) ?? ""
+        let email = (info["user_name"] as? String) ?? ""
+        if !name.isEmpty && !email.isEmpty && name != email { return "\(name) · \(email)" }
+        if !name.isEmpty { return name }
+        if !email.isEmpty { return email }
+        return profile
+    }
+
     /// Profile folder names that contain a Cookies DB. "." means the base itself (Opera).
     func profiles(for b: Browser) -> [String] {
         let base = "\(appSupport)/\(b.base)"
