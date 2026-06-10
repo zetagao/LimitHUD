@@ -32,6 +32,8 @@
 - **Semantic progress bars**: green > 50%, amber 20–50%, red < 20%.
 - `SYNCED HH:mm` timestamp, refreshed each minute.
 - **Follows the system light/dark appearance** automatically.
+- **Resizable** (size slider) and a **custom background color** — text stays readable on any color.
+- **Remembers where you drag it.**
 - Close via the card's ✕, the menu-bar icon, or the global hotkey.
 
 ### Menu bar
@@ -43,32 +45,33 @@
 - **Low-quota alert** — a system notification when any window drops below your threshold (default 20%).
 - **Recovery reminder** — a notification when a window resets back above the threshold.
 - Edge-detected, so it fires once per crossing (no spam).
-- System notification + sound toggles.
+- System notification + sound toggles, plus **quiet hours** to mute reminders during a daily window.
 
 ### Settings (⚙ / right-click → Settings… / ⌘,)
-- **Reminders** — alert on/off, threshold %, recovery reminder, notifications, sound.
+- **Reminders** — alert on/off, threshold %, recovery reminder, notifications, sound, quiet hours.
 - **Sources** — Claude / Codex toggles.
+- **Browser** — which browser / profile to read cookies from (Auto by default).
 - **Card content** — per-window toggles to choose exactly what shows.
 - **Refresh** — 30s / 1min / 5min.
-- **Card** — **custom global hotkey** (record any combo), launch at login, opacity.
+- **Card** — custom global hotkey, **size**, **custom background color**, remember position, launch at login, opacity.
 
 ---
 
 ## Privacy & Security
 
-LimitHUD reads your **Chrome session cookies locally** to call each service's own usage endpoint:
+LimitHUD reads your **browser's session cookies locally** to call each service's own usage endpoint:
 
-- Cookies are decrypted **on-device** (Chrome's SQLite store + the encryption key from your login Keychain) and used **only** as the `Cookie` header to `claude.ai` / `chatgpt.com`.
+- Cookies are decrypted **on-device** (the browser's SQLite store + the encryption key from your login Keychain) and used **only** as the `Cookie` header to `claude.ai` / `chatgpt.com`.
 - **Nothing is sent anywhere else.** No servers, no analytics, no telemetry.
 - The whole thing is open source — audit it.
-- On first run macOS asks once for **Keychain access** (to read Chrome's key) and once for **notifications**. Click Allow.
+- On first run macOS asks once for **Keychain access** (to read the browser's key) and once for **notifications**. Click Allow.
 
 ---
 
 ## Requirements
 
 - macOS 13+
-- Signed into `claude.ai` and/or `chatgpt.com` in **Google Chrome**
+- Signed into `claude.ai` and/or `chatgpt.com` in a supported browser — **Chrome, Brave, Edge, Arc, Vivaldi, Chromium, or Opera**
 - A Swift toolchain to build (Xcode **or** Command Line Tools — full Xcode not required)
 
 ## Download & run (no build)
@@ -127,24 +130,25 @@ MIT — see [LICENSE](LICENSE).
 - 按家显示错误态（未登录/失效/报错），不崩、不连累另一家。
 
 **悬浮卡片**
-- 屏幕悬浮、**始终置顶**（跨桌面、盖全屏），可拖动。
+- 屏幕悬浮、**始终置顶**（跨桌面、盖全屏），可拖动、**记住位置**。
 - 克制暗色设计、等宽大写标签、**三档语义色进度条**（绿/黄/红）。
 - 左下角 `SYNCED HH:mm`；**跟随系统明暗自动切换**。
+- **可缩放大小** + **自定义背景色**（文字色随背景明暗自动翻转，保证可读）。
 - 三种关闭：卡片 ✕ / 菜单栏图标 / 全局快捷键。
 
 **菜单栏**：单图标（8 种样式可换），左键显隐（贴图标下方弹出），右键菜单 Settings… / Refresh / Quit。
 
-**提醒**：低额阈值告警（默认 <20%）、额度恢复提醒、边沿检测不刷屏、通知+声音开关。
+**提醒**：低额阈值告警（默认 <20%）、额度恢复提醒、边沿检测不刷屏、通知+声音开关、**勿扰时段**。
 
-**设置（5 组）**：REMINDERS（告警/阈值/恢复/通知/声音）、SOURCES（Claude/Codex 开关）、CARD CONTENT（逐窗口自定义显示）、REFRESH（间隔）、CARD（**自定义快捷键**/开机自启/透明度）。
+**设置**：REMINDERS（告警/阈值/恢复/通知/声音/勿扰时段）、SOURCES（Claude/Codex 开关）、BROWSER（选浏览器/profile，默认 Auto）、CARD CONTENT（逐窗口自定义显示）、REFRESH（间隔）、CARD（自定义快捷键/缩放/背景色/位置记忆/开机自启/透明度）。
 
 ## 隐私与安全
 
-LimitHUD 在**本地**读取 Chrome 登录 cookie，仅用于调用各服务自己的额度接口：cookie 在本机解密（SQLite + 你的登录钥匙串），**只**作为 `Cookie` 头发给 `claude.ai` / `chatgpt.com`，**不外传任何地方**，无服务器、无统计。代码开源可审计。首次运行会各弹一次钥匙串授权与通知授权，点允许即可。
+LimitHUD 在**本地**读取浏览器登录 cookie，仅用于调用各服务自己的额度接口：cookie 在本机解密（SQLite + 你的登录钥匙串），**只**作为 `Cookie` 头发给 `claude.ai` / `chatgpt.com`，**不外传任何地方**，无服务器、无统计。代码开源可审计。首次运行会各弹一次钥匙串授权与通知授权，点允许即可。
 
 ## 环境要求
 - macOS 13+
-- 用 **Google Chrome** 登录了 `claude.ai` 和/或 `chatgpt.com`
+- 用支持的浏览器登录了 `claude.ai` 和/或 `chatgpt.com` —— **Chrome / Brave / Edge / Arc / Vivaldi / Chromium / Opera**
 - 有 Swift 工具链（Xcode 或 Command Line Tools，无需完整 Xcode）
 
 ## 下载即用（免编译）
