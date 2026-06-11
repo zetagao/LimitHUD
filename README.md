@@ -64,10 +64,12 @@
 
 ## Privacy & Security
 
-LimitHUD reads your **browser's session cookies locally** to call each service's own usage endpoint:
+LimitHUD reads your **browser's session cookies locally** to call each service's own usage endpoint. Reading cookies is a sensitive thing for an app to do, so here is exactly what happens:
 
 - Cookies are decrypted **on-device** (the browser's SQLite store + the encryption key from your login Keychain) and used **only** as the `Cookie` header to `claude.ai` / `chatgpt.com`.
-- **Nothing is sent anywhere else.** No servers, no analytics, no telemetry.
+- Those are **the only two hosts it ever talks to** — easy to verify with Little Snitch / Proxyman, or by grepping the source for URLs.
+- Decrypted cookie values live **in memory only** — never persisted, never logged.
+- **No servers, no analytics, no telemetry, no auto-updater** phoning home. Updates come from Homebrew / GitHub Releases, on your initiative.
 - The whole thing is open source — audit it.
 - On first run macOS asks once for **Keychain access** (to read the browser's key) and once for **notifications**. Click Allow.
 
@@ -78,6 +80,16 @@ LimitHUD reads your **browser's session cookies locally** to call each service's
 - macOS 13+
 - Signed into `claude.ai` and/or `chatgpt.com` in a supported browser — **Chrome, Brave, Edge, Arc, Vivaldi, Chromium, or Opera**
 - A Swift toolchain to build (Xcode **or** Command Line Tools — full Xcode not required)
+
+## Install (Homebrew)
+
+```bash
+brew install --no-quarantine zetagao/tap/limithud
+```
+
+Upgrade later with `brew upgrade --cask limithud`.
+
+> `--no-quarantine` skips the one-time Gatekeeper warning for this signed-but-not-notarized app. Omit it if you'd rather approve the app yourself in **System Settings → Privacy & Security → Open Anyway**.
 
 ## Download & run (no build)
 
@@ -159,12 +171,27 @@ MIT — see [LICENSE](LICENSE).
 
 ## 隐私与安全
 
-LimitHUD 在**本地**读取浏览器登录 cookie，仅用于调用各服务自己的额度接口：cookie 在本机解密（SQLite + 你的登录钥匙串），**只**作为 `Cookie` 头发给 `claude.ai` / `chatgpt.com`，**不外传任何地方**，无服务器、无统计。代码开源可审计。首次运行会各弹一次钥匙串授权与通知授权，点允许即可。
+LimitHUD 在**本地**读取浏览器登录 cookie，仅用于调用各服务自己的额度接口。读 cookie 是件敏感的事，所以把它做的事说清楚：
+
+- cookie 在本机解密（SQLite + 你的登录钥匙串），**只**作为 `Cookie` 头发给 `claude.ai` / `chatgpt.com`。
+- 它**只连这两个域名**——用 Little Snitch / Proxyman 抓包即可验证，源码里搜 URL 也行。
+- 解密后的 cookie **只存在内存里**，不落盘、不写日志。
+- **无服务器、无统计、无遥测、无后台自动更新**，更新走 Homebrew / GitHub Releases，由你主动发起。
+- 代码全部开源，欢迎审计。
+- 首次运行会各弹一次钥匙串授权与通知授权，点允许即可。
 
 ## 环境要求
 - macOS 13+
 - 用支持的浏览器登录了 `claude.ai` 和/或 `chatgpt.com` —— **Chrome / Brave / Edge / Arc / Vivaldi / Chromium / Opera**
 - 有 Swift 工具链（Xcode 或 Command Line Tools，无需完整 Xcode）
+
+## Homebrew 安装
+
+```bash
+brew install --no-quarantine zetagao/tap/limithud
+```
+
+之后用 `brew upgrade --cask limithud` 升级。`--no-quarantine` 跳过首次打开时的 Gatekeeper 拦截（应用已签名、开源，只是未做 Apple 公证）；不加的话按下面「下载即用」第 3 步手动放行一次即可。
 
 ## 下载即用（免编译）
 

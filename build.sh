@@ -74,9 +74,12 @@ if [[ "${1:-}" == "release" ]]; then
     [[ -z "${TAG}" ]] && { echo "no existing release — pass a tag, e.g. ./build.sh release v1.0"; exit 1; }
     echo "==> uploading to latest release ${TAG}"
     gh release upload "${TAG}" "${ZIP}" --clobber
+    # re-upload doesn't fire the release:published event — sync the tap sha by hand
+    gh workflow run update-tap.yml >/dev/null 2>&1 || true
   elif gh release view "${TAG}" >/dev/null 2>&1; then
     echo "==> uploading to existing release ${TAG}"
     gh release upload "${TAG}" "${ZIP}" --clobber
+    gh workflow run update-tap.yml >/dev/null 2>&1 || true
   else
     echo "==> creating release ${TAG}"
     gh release create "${TAG}" "${ZIP}" --title "${APP_NAME} ${TAG}" --generate-notes

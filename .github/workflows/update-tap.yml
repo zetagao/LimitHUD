@@ -1,0 +1,59 @@
+name: Update Homebrew tap
+
+# Bumps Casks/limithud.rb in zetagao/homebrew-tap whenever a release is
+# published. Releases are built and uploaded locally (./build.sh release)
+# so the stable self-signed identity is preserved; CI only syncs the tap.
+# Run manually (workflow_dispatch) after re-uploading a zip to an existing
+# release, since that doesn't fire the "published" event.
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  update-tap:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Resolve release tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="${{ github.event.release.tag_name }}"
+          if [ -z "$TAG" ]; then
+            TAG="$(gh release view -R "$GITHUB_REPOSITORY" --json tagName --jq .tagName)"
+          fi
+          echo "TAG=$TAG" >> "$GITHUB_ENV"
+          echo "VERSION=${TAG#v}" >> "$GITHUB_ENV"
+
+      - name: Download zip and compute sha256
+        run: |
+          curl -fsSL --retry 3 -o LimitHUD.zip \
+            "https://github.com/$GITHUB_REPOSITORY/releases/download/$TAG/LimitHUD.zip"
+          echo "SHA256=$(sha256sum LimitHUD.zip | cut -d' ' -f1)" >> "$GITHUB_ENV"
+
+      - name: Checkout tap
+        uses: actions/checkout@v4
+        with:
+          repository: zetagao/homebrew-tap
+          ssh-key: ${{ secrets.TAP_DEPLOY_KEY }}
+          path: tap
+
+      - name: Bump cask
+        run: |
+          CASK=tap/Casks/limithud.rb
+          sed -i -E "s|^  version \".*\"|  version \"$VERSION\"|" "$CASK"
+          sed -i -E "s|^  sha256 \".*\"|  sha256 \"$SHA256\"|" "$CASK"
+          ruby -c "$CASK"
+          cd tap
+          git config user.name "github-actions[bot]"
+          git config user.email "41898025+github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet; then
+            echo "cask already up to date ($VERSION / $SHA256)"
+          else
+            git commit -am "limithud $VERSION"
+            git push
+          fi
