@@ -43,9 +43,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             .receive(on: RunLoop.main)
             .sink { [weak self] _ in self?.updateStatusItem() }
             .store(in: &cancellables)
-        s.$menuBarMode.combineLatest(s.$menuBarSource)
-            .dropFirst()
-            .sink { [weak self] _, _ in self?.updateStatusItem() }
+        s.$menuBarSource.dropFirst()
+            .sink { [weak self] _ in self?.updateStatusItem() }
             .store(in: &cancellables)
         s.$menuBarQuietHealthy.dropFirst()
             .sink { [weak self] _ in self?.updateStatusItem() }
@@ -72,35 +71,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     // MARK: Menu bar button
 
-    /// Candidate menu-bar icons. Pick one live from the right-click submenu.
-    private let iconChoices: [(symbol: String, title: String)] = [
-        ("gauge.with.dots.needle.bottom.50percent", "Gauge"),
-        ("speedometer",            "Speedometer"),
-        ("circle.righthalf.filled","Half Circle"),
-        ("chart.bar.fill",         "Bar Chart"),
-        ("chart.pie.fill",         "Pie"),
-        ("bolt.fill",              "Bolt"),
-        ("hourglass",              "Hourglass"),
-        ("chart.line.downtrend.xyaxis", "Downtrend"),
-        // cute & cool
-        ("sparkles",               "Sparkles"),
-        ("flame.fill",             "Flame"),
-        ("bolt.circle.fill",       "Bolt Circle"),
-        ("moon.stars.fill",        "Moon & Stars"),
-        ("leaf.fill",              "Leaf"),
-        ("drop.fill",              "Drop"),
-        ("star.fill",              "Star"),
-        ("heart.fill",             "Heart"),
-        ("atom",                   "Atom"),
-        ("waveform",               "Waveform"),
-        ("cloud.fill",             "Cloud"),
-        ("flag.checkered",         "Checkered"),
-    ]
-    private let symbolKey = "menuBarSymbol"
-    private var currentSymbol: String {
-        UserDefaults.standard.string(forKey: symbolKey) ?? iconChoices[0].symbol
-    }
-
     private func setupStatusItem() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         if let button = statusItem.button {
@@ -110,13 +80,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             button.toolTip = "AI Quota · click to toggle / right-click for menu (⌘⇧L)"
         }
         updateStatusItem()
-    }
-
-    private func iconImage() -> NSImage? {
-        let img = NSImage(systemSymbolName: currentSymbol, accessibilityDescription: "AI Quota")
-            ?? NSImage(systemSymbolName: iconChoices[0].symbol, accessibilityDescription: "AI Quota")
-        img?.isTemplate = true
-        return img
     }
 
     /// Tightest monitored, non-hidden window (nil if no data).
@@ -149,30 +112,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             else { tint = s.menuBarQuietHealthy ? nil : .systemGreen }
         }
 
-        let showIcon = (s.menuBarMode == "icon" || s.menuBarMode == "iconValue")
-        let showValue = (s.menuBarMode != "icon")
-
-        button.image = showIcon ? iconImage() : nil
+        button.image = nil
         button.contentTintColor = tint
 
-        if showValue {
-            let str: String
-            if let pick { str = "\(pick.name) \(Int(pick.remaining * 100))%" }
-            else { str = "–" }
-            let text = showIcon ? " " + str : str
-            button.attributedTitle = NSAttributedString(string: text, attributes: [
-                .foregroundColor: tint ?? NSColor.labelColor,
-                .font: NSFont.monospacedDigitSystemFont(ofSize: NSFont.systemFontSize - 1, weight: .medium)
-            ])
-        } else {
-            button.attributedTitle = NSAttributedString(string: "")
-        }
-    }
-
-    @objc private func selectIcon(_ sender: NSMenuItem) {
-        guard let symbol = sender.representedObject as? String else { return }
-        UserDefaults.standard.set(symbol, forKey: symbolKey)
-        updateStatusItem()
+        let str: String
+        if let pick { str = "\(pick.name) \(Int(pick.remaining * 100))%" }
+        else { str = "–" }
+        button.attributedTitle = NSAttributedString(string: str, attributes: [
+            .foregroundColor: tint ?? NSColor.labelColor,
+            .font: NSFont.monospacedDigitSystemFont(ofSize: NSFont.systemFontSize - 1, weight: .medium)
+        ])
     }
 
     @objc private func statusItemClicked() {
@@ -187,22 +136,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let menu = NSMenu()
         menu.addItem(withTitle: "Settings…", action: #selector(settingsAction), keyEquivalent: ",")
         menu.addItem(withTitle: "Refresh", action: #selector(refreshAction), keyEquivalent: "")
-
-        // 图标样式 submenu — each item previews its own SF Symbol.
-        let iconMenu = NSMenu()
-        for choice in iconChoices {
-            let item = NSMenuItem(title: choice.title, action: #selector(selectIcon(_:)), keyEquivalent: "")
-            item.target = self
-            item.representedObject = choice.symbol
-            let preview = NSImage(systemSymbolName: choice.symbol, accessibilityDescription: nil)
-            preview?.isTemplate = true
-            item.image = preview
-            item.state = (choice.symbol == currentSymbol) ? .on : .off
-            iconMenu.addItem(item)
-        }
-        let iconItem = NSMenuItem(title: "Icon Style", action: nil, keyEquivalent: "")
-        iconItem.submenu = iconMenu
-        menu.addItem(iconItem)
 
         menu.addItem(.separator())
         menu.addItem(withTitle: "Quit LimitHUD", action: #selector(quitAction), keyEquivalent: "q")

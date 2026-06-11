@@ -67,11 +67,6 @@ struct SettingsView: View {
                 }
 
                 group("MENU BAR") {
-                    Picker("Show", selection: $settings.menuBarMode) {
-                        Text("Icon + %").tag("iconValue")
-                        Text("% only").tag("value")
-                        Text("Icon only").tag("icon")
-                    }
                     Picker("Value", selection: $settings.menuBarSource) {
                         Text("Tightest").tag("tightest")
                         Text("Claude").tag("claude")
