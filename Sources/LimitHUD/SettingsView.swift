@@ -66,6 +66,24 @@ struct SettingsView: View {
                     }
                 }
 
+                group("MENU BAR") {
+                    Picker("Show", selection: $settings.menuBarMode) {
+                        Text("Icon + %").tag("iconValue")
+                        Text("% only").tag("value")
+                        Text("Icon only").tag("icon")
+                    }
+                    Picker("Value", selection: $settings.menuBarSource) {
+                        Text("Tightest").tag("tightest")
+                        Text("Claude").tag("claude")
+                        Text("Codex").tag("codex")
+                    }
+                    Toggle("Quiet when healthy", isOn: $settings.menuBarQuietHealthy)
+                    Text("Stays neutral above 50% · amber under 50% · red under 20%.")
+                        .font(.system(size: 11))
+                        .foregroundColor(Theme.muted2)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
                 group("SOURCES") {
                     Toggle("Claude", isOn: $settings.monitorClaude)
                     Toggle("Codex", isOn: $settings.monitorCodex)

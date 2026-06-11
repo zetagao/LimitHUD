@@ -18,7 +18,7 @@ final class AutoSizingHostingView<V: View>: NSHostingView<V> {
 
 /// Borderless, always-on-top, draggable floating panel hosting the SwiftUI card.
 final class HUDPanel: NSPanel {
-    init(store: QuotaStore, onClose: @escaping () -> Void, onSettings: @escaping () -> Void) {
+    init(store: QuotaStore, onClose: @escaping () -> Void, onSettings: @escaping () -> Void, onPin: @escaping () -> Void) {
         super.init(
             contentRect: NSRect(x: 0, y: 0, width: 220, height: 240),
             styleMask: [.borderless, .nonactivatingPanel, .fullSizeContentView],
@@ -37,7 +37,7 @@ final class HUDPanel: NSPanel {
         titlebarAppearsTransparent = true
         hidesOnDeactivate = false
 
-        let root = HUDView(store: store, onClose: onClose, onSettings: onSettings)
+        let root = HUDView(store: store, onClose: onClose, onSettings: onSettings, onPin: onPin)
         let host = AutoSizingHostingView(rootView: root)
         host.translatesAutoresizingMaskIntoConstraints = false
         contentView = host

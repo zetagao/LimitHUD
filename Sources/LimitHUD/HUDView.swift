@@ -15,6 +15,7 @@ struct HUDView: View {
     @Environment(\.colorScheme) private var systemScheme
     var onClose: () -> Void = {}
     var onSettings: () -> Void = {}
+    var onPin: () -> Void = {}
 
     @State private var now = Date()
     private let ticker = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
@@ -33,9 +34,24 @@ struct HUDView: View {
     }
     private var barColor: Color? { settings.cardBarCustom ? settings.cardBarColor : nil }
 
+    /// Tightest visible window across all providers — the real constraint.
+    private var bottleneck: (provider: String, window: QuotaWindow)? {
+        var best: (String, QuotaWindow)?
+        for provider in store.providers where provider.error == nil {
+            for w in provider.windows
+            where !settings.hiddenWindows.contains("\(provider.name)/\(w.label)") {
+                if best == nil || w.remaining < best!.1.remaining { best = (provider.name, w) }
+            }
+        }
+        return best.map { (provider: $0.0, window: $0.1) }
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 11 * s) {
             header
+            if let b = bottleneck {
+                BottleneckHero(provider: b.provider, window: b.window, s: s, p: p, bar: barColor)
+            }
             VStack(alignment: .leading, spacing: 11 * s) {
                 ForEach(store.providers) { provider in
                     let visible = provider.windows.filter {
@@ -76,15 +92,17 @@ struct HUDView: View {
             Spacer(minLength: 6 * s)
             iconButton("arrow.clockwise", spinning: store.isRefreshing) { store.refresh() }
             iconButton("gearshape") { onSettings() }
+            iconButton(settings.cardPinned ? "pin.fill" : "pin",
+                       tint: settings.cardPinned ? Theme.accent : nil) { onPin() }
             iconButton("xmark") { onClose() }
         }
     }
 
-    private func iconButton(_ system: String, spinning: Bool = false, _ action: @escaping () -> Void) -> some View {
+    private func iconButton(_ system: String, spinning: Bool = false, tint: Color? = nil, _ action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: system)
                 .font(.system(size: 10 * s, weight: .medium))
-                .foregroundColor(p.muted)
+                .foregroundColor(tint ?? p.muted)
                 .frame(width: 19 * s, height: 19 * s)
                 .background(Color.white.opacity(0.001))
                 .rotationEffect(.degrees(spinning ? 360 : 0))
@@ -114,6 +132,80 @@ struct HUDView: View {
     private func timeString(_ date: Date) -> String {
         let f = DateFormatter(); f.dateFormat = "HH:mm"
         return f.string(from: date)
+    }
+}
+
+/// Big "what's my real ceiling" block — the tightest window, large % + bar.
+private struct BottleneckHero: View {
+    let provider: String
+    let window: QuotaWindow
+    let s: CGFloat
+    let p: CardPalette
+    let bar: Color?
+
+    private var color: Color { bar ?? Theme.quotaColor(remaining: window.remaining) }
+
+    /// Burn ETA, but only when running out beats the reset (the real constraint).
+    private var eta: TimeInterval? {
+        guard let e = UsageHistory.shared.burnETA(
+            provider: provider, label: window.label, remaining: window.remaining)
+        else { return nil }
+        if let reset = window.resetsAt {
+            let untilReset = reset.timeIntervalSinceNow
+            if untilReset > 0, untilReset <= e { return nil } // reset refills first
+        }
+        return e
+    }
+
+    private var spark: [Double] {
+        UsageHistory.shared.recent(provider: provider, label: window.label).map(\.r)
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6 * s) {
+            HStack(alignment: .firstTextBaseline, spacing: 6 * s) {
+                Text("\(provider.uppercased()) · \(window.label)".uppercased())
+                    .monoLabel(size: 8.5 * s, tracking: 1.4 * s, color: p.muted2)
+                Spacer(minLength: 6 * s)
+                if let cd = window.resetCountdown {
+                    Text(cd).font(.system(size: 9 * s, design: .monospaced)).foregroundColor(p.muted2)
+                }
+            }
+            HStack(alignment: .bottom, spacing: 8 * s) {
+                HStack(alignment: .firstTextBaseline, spacing: 4 * s) {
+                    Text("\(Int(window.remaining * 100))")
+                        .font(.system(size: 30 * s, weight: .bold, design: .rounded))
+                        .foregroundColor(color)
+                        .monospacedDigit()
+                    Text("% left")
+                        .font(.system(size: 11 * s, weight: .medium, design: .monospaced))
+                        .foregroundColor(p.muted)
+                }
+                Spacer(minLength: 4 * s)
+                if spark.count >= 2 {
+                    Sparkline(values: spark, color: color)
+                        .frame(width: 44 * s, height: 18 * s)
+                        .padding(.bottom, 3 * s)
+                }
+            }
+            ProgressBar(value: window.remaining, color: color, s: s * 1.6)
+            if let e = eta {
+                HStack(spacing: 4 * s) {
+                    Image(systemName: "flame.fill").font(.system(size: 8 * s))
+                    Text("empty in \(etaString(e)) at this rate")
+                        .font(.system(size: 9.5 * s, weight: .medium, design: .monospaced))
+                }
+                .foregroundColor(color.opacity(0.9))
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.vertical, 9 * s)
+        .padding(.horizontal, 11 * s)
+        .background(color.opacity(0.08), in: RoundedRectangle(cornerRadius: 10 * s, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 10 * s, style: .continuous)
+                .strokeBorder(color.opacity(0.22), lineWidth: 1)
+        )
     }
 }
 
@@ -200,6 +292,44 @@ private struct ProgressBar: View {
             }
         }
         .frame(height: 4 * s)
+    }
+}
+
+/// Tiny line chart of recent `remaining` values (oldest → newest).
+private struct Sparkline: View {
+    let values: [Double]
+    let color: Color
+
+    var body: some View {
+        GeometryReader { geo in
+            let pts = points(in: geo.size)
+            ZStack {
+                Path { p in
+                    p.move(to: CGPoint(x: 0, y: geo.size.height))
+                    pts.forEach { p.addLine(to: $0) }
+                    p.addLine(to: CGPoint(x: geo.size.width, y: geo.size.height))
+                    p.closeSubpath()
+                }
+                .fill(LinearGradient(colors: [color.opacity(0.22), .clear],
+                                     startPoint: .top, endPoint: .bottom))
+                Path { p in
+                    guard let first = pts.first else { return }
+                    p.move(to: first)
+                    pts.dropFirst().forEach { p.addLine(to: $0) }
+                }
+                .stroke(color.opacity(0.85), style: StrokeStyle(lineWidth: 1.3, lineCap: .round, lineJoin: .round))
+            }
+        }
+    }
+
+    private func points(in size: CGSize) -> [CGPoint] {
+        let lo = values.min() ?? 0, hi = values.max() ?? 1
+        let span = max(hi - lo, 0.001)
+        let n = max(values.count - 1, 1)
+        return values.indices.map { i in
+            CGPoint(x: size.width * CGFloat(i) / CGFloat(n),
+                    y: size.height * (1 - CGFloat((values[i] - lo) / span)))
+        }
     }
 }
 

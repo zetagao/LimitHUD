@@ -10,19 +10,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     var statusItem: NSStatusItem!
     var settingsWC: NSWindowController?
     private var cancellables = Set<AnyCancellable>()
+    /// Global mouse monitor that dismisses the transient peek card on outside click.
+    private var peekMonitor: Any?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         Notifier.requestAuthorization()
         panel = HUDPanel(
             store: store,
-            onClose: { [weak self] in self?.panel.orderOut(nil) },
-            onSettings: { [weak self] in self?.openSettings() }
+            onClose: { [weak self] in self?.hidePanel() },
+            onSettings: { [weak self] in self?.openSettings() },
+            onPin: { [weak self] in self?.togglePin() }
         )
         setupStatusItem()
         NotificationCenter.default.addObserver(
             self, selector: #selector(panelMoved),
             name: NSWindow.didMoveNotification, object: panel)
-        showPanel()
+        // Menu-bar-first: only auto-show the card if the user pinned it.
+        if Settings.shared.cardPinned { showPanel() }
 
         hotKey = HotKeyManager { [weak self] in self?.togglePanel() }
         let s = Settings.shared
@@ -32,6 +36,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             .sink { [weak self] code, mods in
                 self?.hotKey.register(keyCode: UInt32(code), carbonModifiers: UInt32(mods))
             }
+            .store(in: &cancellables)
+
+        // Live menu-bar refresh when data or menu-bar prefs change.
+        store.$providers
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in self?.updateStatusItem() }
+            .store(in: &cancellables)
+        s.$menuBarMode.combineLatest(s.$menuBarSource)
+            .dropFirst()
+            .sink { [weak self] _, _ in self?.updateStatusItem() }
+            .store(in: &cancellables)
+        s.$menuBarQuietHealthy.dropFirst()
+            .sink { [weak self] _ in self?.updateStatusItem() }
+            .store(in: &cancellables)
+        s.$hiddenWindows.dropFirst()
+            .sink { [weak self] _ in self?.updateStatusItem() }
             .store(in: &cancellables)
     }
 
@@ -82,29 +102,77 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func setupStatusItem() {
-        statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
+        statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         if let button = statusItem.button {
             button.action = #selector(statusItemClicked)
             button.target = self
             button.sendAction(on: [.leftMouseUp, .rightMouseUp])
             button.toolTip = "AI Quota · click to toggle / right-click for menu (⌘⇧L)"
         }
-        applyIcon()
+        updateStatusItem()
     }
 
-    private func applyIcon() {
-        guard let button = statusItem?.button else { return }
+    private func iconImage() -> NSImage? {
         let img = NSImage(systemSymbolName: currentSymbol, accessibilityDescription: "AI Quota")
             ?? NSImage(systemSymbolName: iconChoices[0].symbol, accessibilityDescription: "AI Quota")
         img?.isTemplate = true
-        button.image = img
-        button.title = (img == nil) ? "◔" : ""
+        return img
+    }
+
+    /// Tightest monitored, non-hidden window (nil if no data).
+    private func menuBarPick() -> (name: String, remaining: Double)? {
+        let s = Settings.shared
+        var pairs: [(String, Double)] = []
+        for p in store.providers where p.error == nil {
+            for w in p.windows where !s.hiddenWindows.contains("\(p.name)/\(w.label)") {
+                pairs.append((p.name, w.remaining))
+            }
+        }
+        switch s.menuBarSource {
+        case "claude": pairs = pairs.filter { $0.0 == "Claude" }
+        case "codex":  pairs = pairs.filter { $0.0 == "Codex" }
+        default: break
+        }
+        return pairs.min { $0.1 < $1.1 }.map { (name: $0.0, remaining: $0.1) }
+    }
+
+    /// Quiet when healthy; amber/red when it matters. Shows "<Provider> <%>".
+    private func updateStatusItem() {
+        guard let button = statusItem?.button else { return }
+        let s = Settings.shared
+        let pick = menuBarPick()
+
+        var tint: NSColor?
+        if let v = pick?.remaining {
+            if v < 0.2 { tint = .systemRed }
+            else if v < 0.5 { tint = .systemOrange }
+            else { tint = s.menuBarQuietHealthy ? nil : .systemGreen }
+        }
+
+        let showIcon = (s.menuBarMode == "icon" || s.menuBarMode == "iconValue")
+        let showValue = (s.menuBarMode != "icon")
+
+        button.image = showIcon ? iconImage() : nil
+        button.contentTintColor = tint
+
+        if showValue {
+            let str: String
+            if let pick { str = "\(pick.name) \(Int(pick.remaining * 100))%" }
+            else { str = "–" }
+            let text = showIcon ? " " + str : str
+            button.attributedTitle = NSAttributedString(string: text, attributes: [
+                .foregroundColor: tint ?? NSColor.labelColor,
+                .font: NSFont.monospacedDigitSystemFont(ofSize: NSFont.systemFontSize - 1, weight: .medium)
+            ])
+        } else {
+            button.attributedTitle = NSAttributedString(string: "")
+        }
     }
 
     @objc private func selectIcon(_ sender: NSMenuItem) {
         guard let symbol = sender.representedObject as? String else { return }
         UserDefaults.standard.set(symbol, forKey: symbolKey)
-        applyIcon()
+        updateStatusItem()
     }
 
     @objc private func statusItemClicked() {
@@ -153,15 +221,53 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func togglePanel() {
         if panel.isVisible {
-            panel.orderOut(nil)
+            hidePanel()
         } else {
             showPanel()
         }
     }
 
+    /// Show the card. Pinned → restore remembered/anchored position and stay put.
+    /// Unpinned → "peek" under the icon and auto-dismiss on the next outside click.
     private func showPanel() {
+        // Restore the remembered spot if there is one; otherwise anchor under
+        // the icon. Applies to both peek and pinned so a moved card stays put.
         positionPanel()
-        panel.orderFront(nil)
+        panel.orderFrontRegardless()
+        installPeekMonitorIfNeeded()
+    }
+
+    private func hidePanel() {
+        panel.orderOut(nil)
+        removePeekMonitor()
+    }
+
+    /// Toggle pinned state from the card's 📌 button. Pinning makes the card
+    /// persistent; unpinning turns it back into a transient peek (and arms the
+    /// outside-click dismiss so it behaves like a popover from now on).
+    private func togglePin() {
+        Settings.shared.cardPinned.toggle()
+        if Settings.shared.cardPinned {
+            removePeekMonitor()
+        } else {
+            installPeekMonitorIfNeeded()
+        }
+    }
+
+    /// In peek mode, watch for clicks outside the card and dismiss it.
+    private func installPeekMonitorIfNeeded() {
+        guard !Settings.shared.cardPinned, peekMonitor == nil else { return }
+        peekMonitor = NSEvent.addGlobalMonitorForEvents(
+            matching: [.leftMouseDown, .rightMouseDown]
+        ) { [weak self] _ in
+            // A global monitor only fires for clicks outside our app, so any
+            // event here means the user clicked away — dismiss the peek.
+            self?.hidePanel()
+        }
+    }
+
+    private func removePeekMonitor() {
+        if let m = peekMonitor { NSEvent.removeMonitor(m); peekMonitor = nil }
     }
 
     @objc private func panelMoved() {

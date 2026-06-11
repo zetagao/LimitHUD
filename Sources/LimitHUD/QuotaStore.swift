@@ -57,6 +57,7 @@ final class QuotaStore: ObservableObject {
             self.providers = result
             self.lastUpdated = Date()
             self.isRefreshing = false
+            self.recordHistory(result)
             self.reminders.evaluate(result, settings: s)
         }
     }
@@ -75,6 +76,16 @@ final class QuotaStore: ObservableObject {
             return q
         }
         return r // error, and we have no good data yet
+    }
+
+    /// Feed fresh (non-stale) readings into the forecast history.
+    private func recordHistory(_ providers: [ProviderQuota]) {
+        let at = Date()
+        for p in providers where p.error == nil && !p.stale {
+            for w in p.windows {
+                UsageHistory.shared.record(provider: p.name, label: w.label, remaining: w.remaining, at: at)
+            }
+        }
     }
 
     private func seedPlaceholder() {
