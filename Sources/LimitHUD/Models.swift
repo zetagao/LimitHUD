@@ -32,4 +32,6 @@ struct ProviderQuota: Identifiable {
     let name: String           // "Claude" / "Codex"
     var windows: [QuotaWindow]
     var error: String?         // non-nil → show error state (e.g. not logged in)
+    var stale: Bool = false    // showing last-good data because the latest refresh failed
+    var lastGood: Date? = nil  // when the shown data was actually fetched
 }

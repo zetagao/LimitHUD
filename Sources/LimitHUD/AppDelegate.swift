@@ -62,6 +62,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         ("bolt.fill",              "Bolt"),
         ("hourglass",              "Hourglass"),
         ("chart.line.downtrend.xyaxis", "Downtrend"),
+        // cute & cool
+        ("sparkles",               "Sparkles"),
+        ("flame.fill",             "Flame"),
+        ("bolt.circle.fill",       "Bolt Circle"),
+        ("moon.stars.fill",        "Moon & Stars"),
+        ("leaf.fill",              "Leaf"),
+        ("drop.fill",              "Drop"),
+        ("star.fill",              "Star"),
+        ("heart.fill",             "Heart"),
+        ("atom",                   "Atom"),
+        ("waveform",               "Waveform"),
+        ("cloud.fill",             "Cloud"),
+        ("flag.checkered",         "Checkered"),
     ]
     private let symbolKey = "menuBarSymbol"
     private var currentSymbol: String {

@@ -16,17 +16,23 @@ enum ClaudeProvider {
             }
             var req = URLRequest(url: url)
             req.timeoutInterval = 15
-            req.setValue("application/json", forHTTPHeaderField: "Accept")
+            Net.applyChromiumHeaders(&req, cookie: cookieHeader)
             req.setValue("https://claude.ai", forHTTPHeaderField: "Origin")
             req.setValue("https://claude.ai/settings/usage", forHTTPHeaderField: "Referer")
-            req.setValue(cookieHeader, forHTTPHeaderField: "Cookie")
-            req.setValue(userAgent, forHTTPHeaderField: "User-Agent")
 
             let (data, resp) = try await URLSession.shared.data(for: req)
             if let http = resp as? HTTPURLResponse, http.statusCode != 200 {
-                log("claude usage HTTP \(http.statusCode): \(string(data))")
-                if http.statusCode == 401 || http.statusCode == 403 { return err("Session expired") }
-                return err("HTTP \(http.statusCode)")
+                let body = string(data)
+                log("claude usage HTTP \(http.statusCode): \(body.prefix(160))")
+                if Net.isCloudflareChallenge(status: http.statusCode, body: body, response: resp) {
+                    return err("Cloudflare check")
+                }
+                switch http.statusCode {
+                case 401: return err("Session expired")
+                case 429: return err("Rate limited")
+                case 403: return err("Blocked (403)")
+                default:  return err("HTTP \(http.statusCode)")
+                }
             }
             log("claude usage raw: \(string(data))")
             return parse(data)
@@ -83,10 +89,6 @@ enum ClaudeProvider {
     }
 
     // MARK: Helpers
-
-    private static let userAgent =
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 " +
-        "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
 
     private static func err(_ msg: String) -> ProviderQuota {
         ProviderQuota(name: "Claude", windows: [], error: msg)

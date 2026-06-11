@@ -124,10 +124,21 @@ private struct ProviderSection: View {
     let p: CardPalette
     let bar: Color?
 
+    private func hm(_ d: Date) -> String {
+        let f = DateFormatter(); f.dateFormat = "HH:mm"; return f.string(from: d)
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 7 * s) {
-            Text(provider.name.uppercased())
-                .monoLabel(size: 9 * s, tracking: 1.8 * s, color: p.muted2)
+            HStack(spacing: 5 * s) {
+                Text(provider.name.uppercased())
+                    .monoLabel(size: 9 * s, tracking: 1.8 * s, color: p.muted2)
+                if provider.stale, let lg = provider.lastGood {
+                    Text("· last \(hm(lg))")
+                        .font(.system(size: 8 * s, weight: .medium, design: .monospaced))
+                        .foregroundColor(Theme.warning.opacity(0.9))
+                }
+            }
             if let error = provider.error {
                 HStack(spacing: 5 * s) {
                     Image(systemName: "exclamationmark.triangle.fill").font(.system(size: 8.5 * s))

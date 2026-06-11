@@ -11,6 +11,7 @@ final class QuotaStore: ObservableObject {
     private var timer: Timer?
     private let reminders = ReminderEngine()
     private var cancellables = Set<AnyCancellable>()
+    private var lastGood: [String: (quota: ProviderQuota, at: Date)] = [:]
 
     init() {
         seedPlaceholder()
@@ -50,14 +51,30 @@ final class QuotaStore: ObservableObject {
             async let codex:  ProviderQuota? = s.monitorCodex  ? CodexProvider.fetch(prefs: codexPrefs)  : nil
 
             var result: [ProviderQuota] = []
-            if let c = await claude { result.append(c) }
-            if let c = await codex  { result.append(c) }
+            if let c = await claude { result.append(self.resolve(c)) }
+            if let c = await codex  { result.append(self.resolve(c)) }
 
             self.providers = result
             self.lastUpdated = Date()
             self.isRefreshing = false
             self.reminders.evaluate(result, settings: s)
         }
+    }
+
+    /// On success, remember it. On failure, fall back to the last-good data
+    /// (marked stale) instead of replacing it with an error.
+    private func resolve(_ r: ProviderQuota) -> ProviderQuota {
+        if !r.windows.isEmpty {
+            lastGood[r.name] = (r, Date())
+            return r
+        }
+        if let good = lastGood[r.name] {
+            var q = good.quota
+            q.stale = true
+            q.lastGood = good.at
+            return q
+        }
+        return r // error, and we have no good data yet
     }
 
     private func seedPlaceholder() {
