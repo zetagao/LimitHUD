@@ -95,7 +95,7 @@ text("LimitHUD", lx, 270, 74, ink, weight: .bold, kern: -1)
 text("Live Claude & Codex quota — right on your Mac.", lx, 372, 25, muted)
 
 // feature lines
-let feats = ["Always-on-top floating card", "Threshold & recovery alerts", "Works with Chrome, Brave, Edge, Arc…", "Local & open source — nothing leaves your Mac"]
+let feats = ["Tightest quota, right in your menu bar", "Peek a card — or 📌 pin it", "Burn-rate forecast before you run dry", "Local & open source — nothing leaves your Mac"]
 var fy: CGFloat = 452
 for f in feats {
     ctx.setFillColor(green.cgColor)
@@ -134,9 +134,11 @@ let secs = [
 ]
 
 // measure height
-var ch = pad + 26 // header
+let heroH: CGFloat = 150
+var ch = pad + 40           // header
+ch += heroH + 18            // bottleneck hero + gap
 for s in secs { ch += 30 + CGFloat(s.rows.count)*48 + 10 }
-ch += 14 + 30 + pad // divider + footer
+ch += 14 + 30 + pad         // divider + footer
 let cy = (H - ch)/2
 
 // green glow behind card
@@ -163,17 +165,61 @@ ctx.restoreGState()
 
 var y = cy + pad
 let tx = cx + pad
+let barW = CW - pad*2
 // header
 ctx.setFillColor(green.cgColor); ctx.fillEllipse(in: CGRect(x: tx, y: y+6, width: 9, height: 9))
 text("AI QUOTA", tx+18, y, 15, muted, weight: .bold, kern: 2)
-for (i, gx) in [CW-pad-66, CW-pad-44, CW-pad-22].enumerated() {
-    let _ = i
-    ctx.setStrokeColor(muted2.cgColor); ctx.setLineWidth(1.6)
+for (i, gx) in [CW-pad-88, CW-pad-66, CW-pad-44, CW-pad-22].enumerated() {
+    // the 3rd glyph is the pin (accented when pinned)
+    let isPin = (i == 2)
+    ctx.setStrokeColor((isPin ? green : muted2).cgColor); ctx.setLineWidth(1.6)
     ctx.strokeEllipse(in: CGRect(x: cx+gx, y: y-1, width: 15, height: 15))
+    if isPin { ctx.setFillColor(green.withAlphaComponent(0.5).cgColor); ctx.fillEllipse(in: CGRect(x: cx+gx+5, y: y+3, width: 5, height: 5)) }
 }
 y += 40
 
-let barW = CW - pad*2
+// ── Bottleneck hero (the tightest window, called out big) ──
+let hero = secs[1].rows[0]              // CODEX · 5-Hour, 14%, red
+let heroRect = CGRect(x: tx, y: y, width: barW, height: heroH)
+ctx.addPath(roundedPath(heroRect, 16)); ctx.setFillColor(hero.color.withAlphaComponent(0.08).cgColor); ctx.fillPath()
+ctx.addPath(roundedPath(heroRect, 16)); ctx.setStrokeColor(hero.color.withAlphaComponent(0.22).cgColor); ctx.setLineWidth(1); ctx.strokePath()
+let hp: CGFloat = 18
+var hy = y + 16
+text("CODEX · 5-HOUR", tx+hp, hy, 13, muted2, weight: .bold, kern: 1.6)
+text(hero.cd, cx+CW-pad-hp-textW(hero.cd, 13, mono: true), hy, 13, muted2, mono: true)
+hy += 24
+// big number + "% left"
+let bigW = text("\(hero.pct)", tx+hp, hy, 46, hero.color, weight: .bold, mono: true)
+text("% left", tx+hp+bigW+8, hy+24, 16, muted, weight: .medium, mono: true)
+// sparkline (recent usage trending down) on the right
+let spX = cx+CW-pad-hp-96, spY = hy+6, spW: CGFloat = 96, spH: CGFloat = 40
+let pts = [0.82, 0.74, 0.7, 0.55, 0.43, 0.3, 0.22, 0.14]
+func spPoint(_ i: Int) -> CGPoint {
+    CGPoint(x: spX + spW*CGFloat(i)/CGFloat(pts.count-1), y: spY + spH*(1 - CGFloat(pts[i])))
+}
+ctx.saveGState()
+let area = CGMutablePath()
+area.move(to: CGPoint(x: spX, y: spY+spH))
+for i in pts.indices { area.addLine(to: spPoint(i)) }
+area.addLine(to: CGPoint(x: spX+spW, y: spY+spH)); area.closeSubpath()
+ctx.addPath(area); ctx.clip()
+if let g = CGGradient(colorsSpace: sRGB, colors: [hero.color.withAlphaComponent(0.28).cgColor, hero.color.withAlphaComponent(0).cgColor] as CFArray, locations: [0,1]) {
+    ctx.drawLinearGradient(g, start: CGPoint(x: 0, y: spY), end: CGPoint(x: 0, y: spY+spH), options: [])
+}
+ctx.restoreGState()
+ctx.setStrokeColor(hero.color.cgColor); ctx.setLineWidth(2); ctx.setLineJoin(.round); ctx.setLineCap(.round)
+ctx.move(to: spPoint(0)); for i in pts.indices.dropFirst() { ctx.addLine(to: spPoint(i)) }; ctx.strokePath()
+hy = y + heroH - 50
+// thick bar
+ctx.addPath(roundedPath(CGRect(x: tx+hp, y: hy, width: barW-hp*2, height: 9), 4.5)); ctx.setFillColor(C(1,1,1,0.08).cgColor); ctx.fillPath()
+ctx.saveGState(); ctx.setShadow(offset: .zero, blur: 8, color: hero.color.withAlphaComponent(0.5).cgColor)
+ctx.addPath(roundedPath(CGRect(x: tx+hp, y: hy, width: max(8,(barW-hp*2)*CGFloat(hero.pct)/100), height: 9), 4.5)); ctx.setFillColor(hero.color.cgColor); ctx.fillPath()
+ctx.restoreGState()
+hy += 22
+// forecast line
+text("🔥", tx+hp, hy-2, 13, hero.color)
+text("empty in ~22m at this rate", tx+hp+22, hy, 14, hero.color.withAlphaComponent(0.92), weight: .medium, mono: true)
+y += heroH + 18
 for s in secs {
     text(s.name, tx, y, 14, muted2, weight: .bold, kern: 2.4)
     y += 30
