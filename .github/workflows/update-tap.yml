@@ -36,7 +36,7 @@ jobs:
           echo "SHA256=$(sha256sum LimitHUD.zip | cut -d' ' -f1)" >> "$GITHUB_ENV"
 
       - name: Checkout tap
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: zetagao/homebrew-tap
           ssh-key: ${{ secrets.TAP_DEPLOY_KEY }}
