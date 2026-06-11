@@ -1,8 +1,8 @@
 <div align="center">
   <img src="docs/icon.png" width="120" alt="LimitHUD icon">
   <h1>LimitHUD</h1>
-  <p>A floating macOS HUD that keeps a live eye on your <b>Claude</b> and <b>Codex (ChatGPT)</b> usage quotas — and warns you before you run out.</p>
-  <p>Stays out of your menu bar · floats above everything · fully customizable reminders & looks.</p>
+  <p>A menu-bar HUD that keeps a live eye on your <b>Claude</b> and <b>Codex (ChatGPT)</b> usage quotas — and warns you before you run out.</p>
+  <p>Lives in your menu bar · quiet when healthy · peek a card, pin it, or forget it · fully customizable reminders & looks.</p>
   <p>
     <img src="https://img.shields.io/badge/license-MIT-green" alt="MIT License">
     <img src="https://img.shields.io/badge/macOS-13%2B-black?logo=apple" alt="macOS 13+">
@@ -25,21 +25,26 @@
 - **Auto-refresh** every 30s / 1min / 5min, with a **reset countdown** per window (e.g. `2h13m`, `3d20h`).
 - Graceful error rows per provider (not signed in / session expired / HTTP error) — never crashes, never blocks the other provider.
 
-### The floating card
-- Floats on screen, **always on top** across every Space and over other apps' full-screen — until you close it.
-- **Draggable** anywhere.
-- Quiet dark design — solid frosted surface, hairline border, monospaced uppercase system labels.
-- **Semantic progress bars**: green > 50%, amber 20–50%, red < 20%.
-- `SYNCED HH:mm` timestamp, refreshed each minute.
-- **Follows the system light/dark appearance** automatically.
-- **Resizable** (size slider) and a **custom background color** — text stays readable on any color.
-- **Remembers where you drag it.**
-- Close via the card's ✕, the menu-bar icon, or the global hotkey.
+### Menu bar (the home base)
+- Shows your **tightest quota as a colored %** — neutral when healthy, **amber under 50%**, **red under 20%** — so a glance tells you everything.
+- **Quiet when healthy**: stays neutral until quota actually matters (toggleable).
+- Pick what it shows: **% only**, **icon + %**, or **icon only** (8 icon styles, switchable live).
+- Point it at the **tightest** window, or lock it to **Claude** or **Codex**.
+- **Left-click** to peek a card, **right-click** for Settings… / Refresh / Quit.
 
-### Menu bar
-- A **single icon** (8 styles to pick from, switchable live), so it barely takes a slot.
-- **Left-click** toggles the card (pops up right under the icon).
-- **Right-click** menu: Settings… / Refresh / Quit.
+### Peek & pin
+- **Left-click → peek**: the card pops up right under the icon and **auto-dismisses when you click away** — popover-style, no clutter.
+- **📌 Pin** to keep it as a **persistent floating HUD** — always on top across every Space and over full-screen apps, draggable anywhere.
+- **Remembers where you drag it**, whether peeked or pinned.
+
+### The card
+- **Bottleneck hero** up top: the single most-constrained window across Claude & Codex as a **big %**, bar, and reset countdown — your real ceiling, front and center.
+- **Burn-rate forecast** 🔥: tracks usage over time and shows *"empty in ~22m at this rate"* — but only when running out would beat the reset, so it never cries wolf.
+- A **mini sparkline** of recent usage in the hero.
+- Below: every window as a **semantic bar** (green > 50%, amber 20–50%, red < 20%) with `% left` and reset countdown.
+- Quiet dark design — frosted surface, hairline border, monospaced uppercase labels; **follows system light/dark**.
+- **Resizable** (size slider), **custom background / text / bar colors** — text stays readable on any color.
+- `SYNCED HH:mm` timestamp, refreshed each minute. Close via ✕, the menu-bar icon, or the global hotkey.
 
 ### Reminders
 - **Low-quota alert** — a system notification when any window drops below your threshold (default 20%).
@@ -92,7 +97,7 @@ LimitHUD reads your **browser's session cookies locally** to call each service's
 ./build.sh            # compile + sign  →  LimitHUD.app
 ./build.sh run        # build and launch
 ./build.sh install    # build, install to /Applications, launch
-./build.sh release v1.1   # build + zip + publish to a GitHub release (omit tag to re-upload latest)
+./build.sh release v2.0   # build + zip + publish to a GitHub release (omit tag to re-upload latest)
 ```
 
 The self-signed cert keeps the app's code identity stable across rebuilds, so the Keychain "Always Allow" sticks.
@@ -120,7 +125,7 @@ MIT — see [LICENSE](LICENSE).
 
 ## 简介
 
-一个 macOS 悬浮小工具，实时盯着 **Claude** 与 **Codex (ChatGPT)** 的额度，快用完前提醒你。不占菜单栏、悬浮在屏幕、可自定义提醒与外观。
+一个 macOS 菜单栏小工具，实时盯着 **Claude** 与 **Codex (ChatGPT)** 的额度，快用完前提醒你。常驻菜单栏、健康时安静、可弹卡/钉住/无视、提醒与外观皆可自定义。
 
 ## 功能
 
@@ -129,14 +134,24 @@ MIT — see [LICENSE](LICENSE).
 - 统一显示**剩余**（`% left`）；自动刷新（30s/1min/5min）；每窗口**重置倒计时**。
 - 按家显示错误态（未登录/失效/报错），不崩、不连累另一家。
 
-**悬浮卡片**
-- 屏幕悬浮、**始终置顶**（跨桌面、盖全屏），可拖动、**记住位置**。
-- 克制暗色设计、等宽大写标签、**三档语义色进度条**（绿/黄/红）。
-- 左下角 `SYNCED HH:mm`；**跟随系统明暗自动切换**。
-- **可缩放大小** + **自定义背景色**（文字色随背景明暗自动翻转，保证可读）。
-- 三种关闭：卡片 ✕ / 菜单栏图标 / 全局快捷键。
+**菜单栏（主场）**
+- 直接显示**最紧的那档额度（带颜色的 %）**：健康中性、**<50% 琥珀**、**<20% 红**，瞄一眼就懂。
+- **健康时安静**：不到要紧关头保持中性（可关）。
+- 显示形态可选：**仅 %** / **图标 + %** / **仅图标**（8 种图标样式可换）。
+- 可盯**最紧窗口**，也可锁定只看 **Claude** 或 **Codex**。
+- 左键弹卡，右键菜单 Settings… / Refresh / Quit。
 
-**菜单栏**：单图标（8 种样式可换），左键显隐（贴图标下方弹出），右键菜单 Settings… / Refresh / Quit。
+**弹卡与钉住**
+- **左键 → 弹卡**：卡片贴图标下方弹出，**点别处自动收起**（popover 式，不杂乱）。
+- **📌 钉住**：变成**常驻悬浮 HUD**——跨桌面、盖全屏始终置顶，可任意拖动。
+- 弹卡或钉住都**记住你拖到的位置**。
+
+**卡片**
+- 顶部**瓶颈大字**：把 Claude/Codex 里最紧的那个窗口用**大号 %** + 进度条 + 重置倒计时单独拎出来——一眼看清真正的天花板。
+- **燃尽预测** 🔥：根据用量趋势推算「按当前速度还有多久见底」，且只在**见底早于重置**时才提示，不瞎报。
+- 瓶颈区带**迷你 sparkline** 用量曲线。
+- 下方逐窗口**语义色进度条**（绿/黄/红）+ `% left` + 重置倒计时。
+- 克制暗色、等宽大写标签、**跟随系统明暗**；**可缩放** + **自定义背景/文字/进度条色**；左下 `SYNCED HH:mm`；✕ / 菜单栏图标 / 快捷键三种关闭。
 
 **提醒**：低额阈值告警（默认 <20%）、额度恢复提醒、边沿检测不刷屏、通知+声音开关、**勿扰时段**。
 
