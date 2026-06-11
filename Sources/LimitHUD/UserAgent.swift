@@ -32,6 +32,7 @@ enum Net {
     /// Apply the headers a real Chrome XHR sends, so first-party APIs behind
     /// Cloudflare are more likely to accept the request with the session cookie.
     static func applyChromiumHeaders(_ req: inout URLRequest, cookie: String) {
+        req.cachePolicy = .reloadIgnoringLocalCacheData // quota changes — never serve cached
         req.setValue("application/json", forHTTPHeaderField: "Accept")
         req.setValue(UserAgent.value, forHTTPHeaderField: "User-Agent")
         req.setValue("en-US,en;q=0.9", forHTTPHeaderField: "Accept-Language")

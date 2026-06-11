@@ -173,19 +173,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     /// Restore the remembered position if we have one, else anchor under the icon.
+    /// Clamps fully on-screen so a disconnected monitor can't hide the card.
     private func positionPanel() {
         let s = Settings.shared
-        if s.rememberPosition, s.cardPosSet {
-            var x = s.cardPosX
-            let y = s.cardPosTop - panel.frame.size.height
-            if let screen = NSScreen.main {
-                let vf = screen.visibleFrame
-                x = min(max(x, vf.minX), vf.maxX - panel.frame.size.width)
-            }
-            panel.setFrameOrigin(NSPoint(x: x, y: y))
-        } else {
-            positionUnderStatusItem()
-        }
+        guard s.rememberPosition, s.cardPosSet else { positionUnderStatusItem(); return }
+        let size = panel.frame.size
+        let topLeft = NSPoint(x: s.cardPosX, y: s.cardPosTop)
+        let screen = NSScreen.screens.first { $0.frame.contains(topLeft) } ?? NSScreen.main
+        guard let vf = screen?.visibleFrame else { positionUnderStatusItem(); return }
+        let x = min(max(s.cardPosX, vf.minX), vf.maxX - size.width)
+        let y = min(max(s.cardPosTop - size.height, vf.minY), vf.maxY - size.height)
+        panel.setFrameOrigin(NSPoint(x: x, y: y))
     }
 
     // MARK: Placement

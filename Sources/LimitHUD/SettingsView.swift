@@ -212,6 +212,7 @@ private struct HotKeyRecorder: View {
             .tint(recording ? Theme.warning : Theme.accent)
             .font(.system(size: 12, weight: .medium, design: .monospaced))
         }
+        .onDisappear { stop() } // don't leak the key monitor if the window closes mid-record
     }
 
     private func start() {
