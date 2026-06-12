@@ -11,6 +11,8 @@
   </p>
   <br>
   <img src="docs/hero.png" width="820" alt="LimitHUD">
+  <br><br>
+  <img src="docs/demo.gif" width="680" alt="LimitHUD demo — menu bar turns amber then red, card peeks with burn-rate forecast, alert fires">
 </div>
 
 ---
