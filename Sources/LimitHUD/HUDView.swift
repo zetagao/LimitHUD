@@ -113,9 +113,10 @@ struct HUDView: View {
                 RoundedRectangle(cornerRadius: 14 * s, style: .continuous)
                     .fill(settings.cardBgColor)
             } else {
-                // Real frosted glass: system blur with a Framea-dark tint on top.
+                // Premium deep-dark by default — a dense Framea-dark tint with
+                // just a hint of frosted glass underneath (stays dark on any wallpaper).
                 FrostedBackground()
-                    .overlay(Theme.surface.opacity(0.62))
+                    .overlay(Theme.surface.opacity(0.9))
                     .clipShape(RoundedRectangle(cornerRadius: 14 * s, style: .continuous))
             }
         }
