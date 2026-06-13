@@ -2,7 +2,7 @@
   <img src="docs/icon.png" width="120" alt="LimitHUD icon">
   <h1>LimitHUD</h1>
   <p>A menu-bar HUD that keeps a live eye on your <b>Claude</b> and <b>Codex (ChatGPT)</b> usage quotas — and warns you before you run out.</p>
-  <p>Lives in your menu bar · quiet when healthy · peek a card, pin it, or forget it · fully customizable reminders & looks.</p>
+  <p>Lives in your menu bar · quiet when healthy · peek a card with a pet that reacts to your quota · fully customizable reminders & looks.</p>
   <p>
     <img src="https://img.shields.io/badge/license-MIT-green" alt="MIT License">
     <img src="https://img.shields.io/badge/macOS-13%2B-black?logo=apple" alt="macOS 13+">
@@ -28,8 +28,8 @@
 ### Menu bar (the home base)
 - Shows your **tightest quota as a colored %** — neutral when healthy, **amber under 50%**, **red under 20%** — so a glance tells you everything.
 - **Quiet when healthy**: stays neutral until quota actually matters (toggleable).
-- Pick what it shows: **% only**, **icon + %**, or **icon only** (8 icon styles, switchable live).
 - Point it at the **tightest** window, or lock it to **Claude** or **Codex**.
+- Stays clean and text-only — the personality lives on the card.
 - **Left-click** to peek a card, **right-click** for Settings… / Refresh / Quit.
 
 ### Peek & pin
@@ -42,9 +42,17 @@
 - **Burn-rate forecast** 🔥: tracks usage over time and shows *"empty in ~22m at this rate"* — but only when running out would beat the reset, so it never cries wolf.
 - A **mini sparkline** of recent usage in the hero.
 - Below: every window as a **semantic bar** (green > 50%, amber 20–50%, red < 20%) with `% left` and reset countdown.
-- Quiet dark design — frosted surface, hairline border, monospaced uppercase labels; **follows system light/dark**.
+- Quiet dark design — **real frosted glass**, hairline border, monospaced uppercase labels; **follows system light/dark**.
 - **Resizable** (size slider), **custom background / text / bar colors** — text stays readable on any color.
+- **Refill celebration**: when a window resets, the bar sweeps back, the number rolls up, and the pet throws a little party.
 - `SYNCED HH:mm` timestamp, refreshed each minute. Close via ✕, the menu-bar icon, or the global hotkey.
+
+### Your quota pet 🐾
+- A little procedurally-drawn pixel creature sits at the top of the card — pick **Mochi · Cat · Ghost · Dog** in Settings.
+- Its **mood tracks your tightest window**: happy ≥50%, uneasy under 50%, panicking under 20%, asleep when there's no data, partying on a refill.
+- Fully animated — breathing with squash & stretch, blinks, eye darts — and each character has a **different set of actions for every mood** (a healthy dog does zoomies; a panicking one frantically headbutts the bubble to warn you).
+- It talks in its own voice via a translucent speech bubble, and **physically plays with it** — nudging, swatting, phasing through, and pulling off eight different "smash" finishers (two signatures per character).
+- Purely drawn in code (no image assets), in a soft pixel-mosaic style with a Morandi palette. See [the full behavior matrix](design/pet-animation-matrix.md).
 
 ### Reminders
 - **Low-quota alert** — a system notification when any window drops below your threshold (default 20%).
@@ -54,6 +62,8 @@
 
 ### Settings (⚙ / right-click → Settings… / ⌘,)
 - **Reminders** — alert on/off, threshold %, recovery reminder, notifications, sound, quiet hours.
+- **Pet** — choose your character: Mochi / Cat / Ghost / Dog.
+- **Menu bar** — point at the tightest window or lock to Claude / Codex; quiet-when-healthy toggle.
 - **Sources** — Claude / Codex toggles.
 - **Browser** — read Claude and Codex from **different browsers / profiles** (great when they're under different Google accounts).
 - **Card content** — per-window toggles to choose exactly what shows.
@@ -109,7 +119,7 @@ Upgrade later with `brew upgrade --cask limithud`.
 ./build.sh            # compile + sign  →  LimitHUD.app
 ./build.sh run        # build and launch
 ./build.sh install    # build, install to /Applications, launch
-./build.sh release v2.0   # build + zip + publish to a GitHub release (omit tag to re-upload latest)
+./build.sh release v2.1   # build + zip + publish to a GitHub release (omit tag to re-upload latest)
 ```
 
 The self-signed cert keeps the app's code identity stable across rebuilds, so the Keychain "Always Allow" sticks.
@@ -137,7 +147,7 @@ MIT — see [LICENSE](LICENSE).
 
 ## 简介
 
-一个 macOS 菜单栏小工具，实时盯着 **Claude** 与 **Codex (ChatGPT)** 的额度，快用完前提醒你。常驻菜单栏、健康时安静、可弹卡/钉住/无视、提醒与外观皆可自定义。
+一个 macOS 菜单栏小工具，实时盯着 **Claude** 与 **Codex (ChatGPT)** 的额度，快用完前提醒你。常驻菜单栏、健康时安静、弹出的卡片上还有一只**跟着额度变心情的宠物**、提醒与外观皆可自定义。
 
 ## 功能
 
@@ -149,8 +159,8 @@ MIT — see [LICENSE](LICENSE).
 **菜单栏（主场）**
 - 直接显示**最紧的那档额度（带颜色的 %）**：健康中性、**<50% 琥珀**、**<20% 红**，瞄一眼就懂。
 - **健康时安静**：不到要紧关头保持中性（可关）。
-- 显示形态可选：**仅 %** / **图标 + %** / **仅图标**（8 种图标样式可换）。
 - 可盯**最紧窗口**，也可锁定只看 **Claude** 或 **Codex**。
+- 保持纯文字干净——性格都在卡片上。
 - 左键弹卡，右键菜单 Settings… / Refresh / Quit。
 
 **弹卡与钉住**
@@ -163,11 +173,19 @@ MIT — see [LICENSE](LICENSE).
 - **燃尽预测** 🔥：根据用量趋势推算「按当前速度还有多久见底」，且只在**见底早于重置**时才提示，不瞎报。
 - 瓶颈区带**迷你 sparkline** 用量曲线。
 - 下方逐窗口**语义色进度条**（绿/黄/红）+ `% left` + 重置倒计时。
-- 克制暗色、等宽大写标签、**跟随系统明暗**；**可缩放** + **自定义背景/文字/进度条色**；左下 `SYNCED HH:mm`；✕ / 菜单栏图标 / 快捷键三种关闭。
+- 克制暗色、**真·毛玻璃**、等宽大写标签、**跟随系统明暗**；**可缩放** + **自定义背景/文字/进度条色**；左下 `SYNCED HH:mm`；✕ / 菜单栏图标 / 快捷键三种关闭。
+- **回血庆祝**：窗口重置时进度条横扫回满、数字滚动上升，宠物还会开个小派对。
+
+**宠物** 🐾
+- 卡片顶部有一只**纯代码绘制的像素小生物**，设置里可选 **团子 / 猫 / 幽灵 / 狗**。
+- 它的**心情跟着最紧那档额度走**：≥50% 开心、<50% 不安、<20% 慌张、无数据时睡觉、回血时撒花。
+- 全程有动画——呼吸挤压、眨眼、瞟眼，而且**每个角色每个状态的动作都不一样**（健康的狗撒欢跑，慌张的狗会焦急地撞气泡警告你）。
+- 它会用自己的口吻在**半透明对话气泡**里说话，还会**真的去跟气泡玩**——拱、拍、穿透、挤，并使出 8 种不同的"撞坏文字框"大招（每个角色 2 种专属）。
+- 莫兰迪配色的细像素风，零图片资源。完整行为见 [动作矩阵文档](design/pet-animation-matrix.md)。
 
 **提醒**：低额阈值告警（默认 <20%）、额度恢复提醒、边沿检测不刷屏、通知+声音开关、**勿扰时段**。
 
-**设置**：REMINDERS（告警/阈值/恢复/通知/声音/勿扰时段）、SOURCES（Claude/Codex 开关）、BROWSER（Claude 与 Codex 可各自选不同浏览器/profile，适配两个不同 Google 账号）、CARD CONTENT（逐窗口自定义显示）、REFRESH（间隔）、CARD（自定义快捷键/缩放/背景色+文字色+进度条色/位置记忆/开机自启/透明度）。
+**设置**：REMINDERS（告警/阈值/恢复/通知/声音/勿扰时段）、PET（选角色：团子/猫/幽灵/狗）、MENU BAR（盯最紧窗口或锁定 Claude/Codex、健康时安静开关）、SOURCES（Claude/Codex 开关）、BROWSER（Claude 与 Codex 可各自选不同浏览器/profile，适配两个不同 Google 账号）、CARD CONTENT（逐窗口自定义显示）、REFRESH（间隔）、CARD（自定义快捷键/缩放/背景色+文字色+进度条色/位置记忆/开机自启/透明度）。
 
 ## 隐私与安全
 
