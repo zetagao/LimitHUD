@@ -95,7 +95,7 @@ text("LimitHUD", lx, 270, 74, ink, weight: .bold, kern: -1)
 text("Live Claude & Codex quota — right on your Mac.", lx, 372, 25, muted)
 
 // feature lines
-let feats = ["Tightest quota, right in your menu bar", "Peek a card — or 📌 pin it", "Burn-rate forecast before you run dry", "Local & open source — nothing leaves your Mac"]
+let feats = ["Tightest quota, right in your menu bar", "A pixel pet that reacts to your quota", "Burn-rate forecast before you run dry", "Local & open source — nothing leaves your Mac"]
 var fy: CGFloat = 452
 for f in feats {
     ctx.setFillColor(green.cgColor)
@@ -135,7 +135,9 @@ let secs = [
 
 // measure height
 let heroH: CGFloat = 150
+let mbH: CGFloat = 70       // mascot band (pet + speech bubble)
 var ch = pad + 40           // header
+ch += mbH + 14              // mascot band + gap
 ch += heroH + 18            // bottleneck hero + gap
 for s in secs { ch += 30 + CGFloat(s.rows.count)*48 + 10 }
 ch += 14 + 30 + pad         // divider + footer
@@ -177,6 +179,38 @@ for (i, gx) in [CW-pad-88, CW-pad-66, CW-pad-44, CW-pad-22].enumerated() {
     if isPin { ctx.setFillColor(green.withAlphaComponent(0.5).cgColor); ctx.fillEllipse(in: CGRect(x: cx+gx+5, y: y+3, width: 5, height: 5)) }
 }
 y += 40
+
+// ── Mascot band: the quota pet + its speech bubble ──
+let petSize: CGFloat = 66
+var petImg: NSImage!
+MainActor.assumeIsolated {
+    petImg = PixelPet.sprite(style: "mochi", state: "danger", grid: 44, frame: 8)
+}
+petImg.draw(in: NSRect(x: tx - 4, y: y, width: petSize, height: petSize), from: .zero,
+            operation: .sourceOver, fraction: 1, respectFlipped: true,
+            hints: [.interpolation: NSImageInterpolation.none.rawValue])
+// speech bubble
+let bubTitle = "eep!! so low!!"
+let bubSub = "CODEX · NEARLY DRY"
+let bpad: CGFloat = 14, tail: CGFloat = 7
+let bubInnerW = max(textW(bubTitle, 17, weight: .semibold), textW(bubSub, 12, mono: true, kern: 1))
+let bubW = bubInnerW + bpad*2, bubH: CGFloat = 54
+let bx = tx + petSize + 6
+let bubY = y + (petSize - bubH)/2
+let bodyRect = CGRect(x: bx+tail, y: bubY, width: bubW, height: bubH)
+let bMidY = bubY + bubH/2
+let bTail = CGMutablePath()
+bTail.move(to: CGPoint(x: bx, y: bMidY))
+bTail.addLine(to: CGPoint(x: bx+tail+1, y: bMidY-tail))
+bTail.addLine(to: CGPoint(x: bx+tail+1, y: bMidY+tail))
+bTail.closeSubpath()
+ctx.addPath(roundedPath(bodyRect, 11)); ctx.addPath(bTail)
+ctx.setFillColor(C(1,1,1,0.07).cgColor); ctx.fillPath()
+ctx.addPath(roundedPath(bodyRect, 11)); ctx.addPath(bTail)
+ctx.setStrokeColor(C(1,1,1,0.18).cgColor); ctx.setLineWidth(1); ctx.strokePath()
+text(bubTitle, bx+tail+bpad, bubY+10, 17, red, weight: .semibold)
+text(bubSub, bx+tail+bpad, bubY+33, 12, muted2, mono: true, kern: 1)
+y += mbH + 14
 
 // ── Bottleneck hero (the tightest window, called out big) ──
 let hero = secs[1].rows[0]              // CODEX · 5-Hour, 14%, red
