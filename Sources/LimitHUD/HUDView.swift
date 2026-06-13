@@ -27,7 +27,9 @@ struct HUDView: View {
 
     private var s: CGFloat { settings.cardScale }
     private var scheme: ColorScheme {
-        settings.cardBgCustom ? (settings.cardBgIsLight ? .light : .dark) : systemScheme
+        // Default card is always deep-dark (premium), regardless of system theme.
+        // A custom background adapts text to that background's brightness.
+        settings.cardBgCustom ? (settings.cardBgIsLight ? .light : .dark) : .dark
     }
     private var p: CardPalette {
         if settings.cardFgCustom {
@@ -987,6 +989,7 @@ private struct FrostedBackground: NSViewRepresentable {
         v.material = .hudWindow
         v.blendingMode = .behindWindow
         v.state = .active
+        v.appearance = NSAppearance(named: .darkAqua) // keep the glass dark in Light Mode
         return v
     }
     func updateNSView(_ nsView: NSVisualEffectView, context: Context) {}
