@@ -18,3 +18,5 @@ Package.resolved
 *.pem
 *.key
 CLAUDE.md
+design/*.png
+tools/petpreview*.swift

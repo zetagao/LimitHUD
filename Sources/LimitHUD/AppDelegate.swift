@@ -112,13 +112,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             else { tint = s.menuBarQuietHealthy ? nil : .systemGreen }
         }
 
+        let valueText: String
+        if let pick { valueText = "\(pick.name) \(Int(pick.remaining * 100))%" }
+        else { valueText = "–" }
+
+        // Menu bar stays clean: just the tightest quota %, tinted by state.
+        // The pet lives on the card, where it has room to be expressive.
         button.image = nil
         button.contentTintColor = tint
-
-        let str: String
-        if let pick { str = "\(pick.name) \(Int(pick.remaining * 100))%" }
-        else { str = "–" }
-        button.attributedTitle = NSAttributedString(string: str, attributes: [
+        button.attributedTitle = NSAttributedString(string: valueText, attributes: [
             .foregroundColor: tint ?? NSColor.labelColor,
             .font: NSFont.monospacedDigitSystemFont(ofSize: NSFont.systemFontSize - 1, weight: .medium)
         ])

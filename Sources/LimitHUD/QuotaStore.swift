@@ -7,11 +7,15 @@ final class QuotaStore: ObservableObject {
     @Published var providers: [ProviderQuota] = []
     @Published var lastUpdated: Date?
     @Published var isRefreshing = false
+    /// Set whenever a window's remaining jumps back up (quota reset) — drives
+    /// the refill celebration in the card and menu bar.
+    @Published var lastRefill: Date?
 
     private var timer: Timer?
     private let reminders = ReminderEngine()
     private var cancellables = Set<AnyCancellable>()
     private var lastGood: [String: (quota: ProviderQuota, at: Date)] = [:]
+    private var prevRemaining: [String: Double] = [:]
 
     init() {
         seedPlaceholder()
@@ -78,14 +82,23 @@ final class QuotaStore: ObservableObject {
         return r // error, and we have no good data yet
     }
 
-    /// Feed fresh (non-stale) readings into the forecast history.
+    /// Feed fresh (non-stale) readings into the forecast history, and detect
+    /// refills: a visible window whose remaining jumped up notably = a reset.
     private func recordHistory(_ providers: [ProviderQuota]) {
         let at = Date()
+        let hidden = Settings.shared.hiddenWindows
+        var refilled = false
         for p in providers where p.error == nil && !p.stale {
             for w in p.windows {
                 UsageHistory.shared.record(provider: p.name, label: w.label, remaining: w.remaining, at: at)
+                let key = "\(p.name)/\(w.label)"
+                if let prev = prevRemaining[key], w.remaining - prev > 0.15, !hidden.contains(key) {
+                    refilled = true
+                }
+                prevRemaining[key] = w.remaining
             }
         }
+        if refilled { lastRefill = at }
     }
 
     private func seedPlaceholder() {

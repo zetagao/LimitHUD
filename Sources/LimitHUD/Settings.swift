@@ -23,6 +23,7 @@ final class Settings: ObservableObject {
     @Published var cardPinned: Bool         { didSet { d.set(cardPinned, forKey: "cardPinned") } }
 
     // Menu bar display
+    @Published var petStyle: String         { didSet { d.set(petStyle, forKey: "petStyle") } }          // mochi | neko | boo | inu
     @Published var menuBarSource: String    { didSet { d.set(menuBarSource, forKey: "menuBarSource") } } // tightest | claude | codex
     @Published var menuBarQuietHealthy: Bool { didSet { d.set(menuBarQuietHealthy, forKey: "menuBarQuietHealthy") } }
 
@@ -127,6 +128,7 @@ final class Settings: ObservableObject {
         monitorClaude        = bool("monitorClaude", true)
         monitorCodex         = bool("monitorCodex", true)
         cardPinned           = bool("cardPinned", false)
+        petStyle             = ud.string(forKey: "petStyle") ?? "mochi"
         menuBarSource        = ud.string(forKey: "menuBarSource") ?? "tightest"
         menuBarQuietHealthy  = ud.object(forKey: "menuBarQuietHealthy") == nil ? true : ud.bool(forKey: "menuBarQuietHealthy")
 

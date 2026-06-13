@@ -66,6 +66,19 @@ struct SettingsView: View {
                     }
                 }
 
+                group("PET") {
+                    Picker("Character", selection: $settings.petStyle) {
+                        Text("Mochi").tag("mochi")
+                        Text("Cat").tag("neko")
+                        Text("Ghost").tag("boo")
+                        Text("Dog").tag("inu")
+                    }
+                    Text("Your quota buddy on the card — reacts to the tightest window.")
+                        .font(.system(size: 11))
+                        .foregroundColor(Theme.muted2)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
                 group("MENU BAR") {
                     Picker("Value", selection: $settings.menuBarSource) {
                         Text("Tightest").tag("tightest")
