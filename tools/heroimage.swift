@@ -91,7 +91,14 @@ func drawIcon(_ x: CGFloat, _ y: CGFloat, _ side: CGFloat) {
     let ps = ("%" as NSString).size(withAttributes: [.font: NSFont.monospacedSystemFont(ofSize: pf, weight: .bold)])
     text("%", c.x - ps.width/2, c.y - ps.height/2, pf, ink, weight: .bold, mono: true)
 }
-drawIcon(lx, 150, 92)
+// Use the real app icon (correct gauge + centered %) rather than re-drawing it.
+if let iconImg = NSImage(contentsOfFile: "docs/icon.png") {
+    iconImg.draw(in: NSRect(x: lx, y: 150, width: 92, height: 92), from: .zero,
+                 operation: .sourceOver, fraction: 1, respectFlipped: true,
+                 hints: [.interpolation: NSImageInterpolation.high.rawValue])
+} else {
+    drawIcon(lx, 150, 92)
+}
 
 text("LimitHUD", lx, 270, 74, ink, weight: .bold, kern: -1)
 text("Live Claude & Codex quota — right on your Mac.", lx, 372, 25, muted)
