@@ -87,7 +87,9 @@ func drawIcon(_ x: CGFloat, _ y: CGFloat, _ side: CGFloat) {
     ctx.addArc(center: c, radius: r, startAngle: deg(135), endAngle: deg(45), clockwise: false); ctx.strokePath()
     ctx.setStrokeColor(green.cgColor)
     ctx.addArc(center: c, radius: r, startAngle: deg(135), endAngle: deg(135+0.72*270), clockwise: false); ctx.strokePath()
-    text("%", x+side*0.36, y+side*0.34, side*0.30, ink, weight: .bold, mono: true)
+    let pf = side*0.30
+    let ps = ("%" as NSString).size(withAttributes: [.font: NSFont.monospacedSystemFont(ofSize: pf, weight: .bold)])
+    text("%", c.x - ps.width/2, c.y - ps.height/2, pf, ink, weight: .bold, mono: true)
 }
 drawIcon(lx, 150, 92)
 
