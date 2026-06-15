@@ -5,6 +5,7 @@ struct SettingsView: View {
     @ObservedObject var store: QuotaStore
     @ObservedObject var settings = Settings.shared
     private let reader = BrowserCookieReader()
+    @State private var advancedLayoutOpen = false
 
     private func profilesFor(_ browserId: String) -> [String] {
         guard let b = BrowserCookieReader.supported.first(where: { $0.id == browserId })
@@ -43,7 +44,9 @@ struct SettingsView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
+            VStack(alignment: .leading, spacing: 16) {
+
+                settingsHeader
 
                 group("REMINDERS") {
                     Toggle("Low-quota alert", isOn: $settings.thresholdEnabled)
@@ -68,10 +71,10 @@ struct SettingsView: View {
 
                 group("PET") {
                     Picker("Character", selection: $settings.petStyle) {
-                        Text("Mochi").tag("mochi")
-                        Text("Cat").tag("neko")
-                        Text("Ghost").tag("boo")
-                        Text("Dog").tag("inu")
+                        Text("Mochi").tag("mochi")   // the pink blob
+                        Text("Lota").tag("neko")     // the calico cat
+                        Text("Bao").tag("inu")       // the derpy West Highland pup
+                        Text("Mozart").tag("boo")    // the ghost
                     }
                     Text("Your quota buddy on the card — reacts to the tightest window.")
                         .font(.system(size: 11))
@@ -137,7 +140,7 @@ struct SettingsView: View {
                     HotKeyRecorder()
                     Toggle("Launch at login", isOn: $settings.launchAtLogin)
                     Toggle("Remember position", isOn: $settings.rememberPosition)
-                    sliderRow("Size", value: $settings.cardScale, range: 0.8...1.6) {
+                    sliderRow("Size", value: $settings.cardScale, range: 0.7...2.0) {
                         "\(Int(settings.cardScale * 100))%"
                     }
                     sliderRow("Opacity", value: $settings.opacity, range: 0.4...1.0) {
@@ -166,19 +169,69 @@ struct SettingsView: View {
                     }
                 }
 
-                Text("LimitHUD · \(settings.hotKeyDisplay) to toggle the card")
+                DisclosureGroup(isExpanded: $advancedLayoutOpen) {
+                    VStack(alignment: .leading, spacing: 13) {
+                        Text("Drag the card's right edge for width, or the lower-right corner for overall size.")
+                            .font(.system(size: 10))
+                            .foregroundColor(Theme.muted3)
+                            .fixedSize(horizontal: false, vertical: true)
+                        sliderRow("Width", value: $settings.cardWidth, range: 160...460) {
+                            "\(Int(settings.cardWidth))"
+                        }
+                        sliderRow("Pet", value: $settings.petScale, range: 0.5...2.4) {
+                            "\(Int(settings.petScale * 100))%"
+                        }
+                        sliderRow("Forecast", value: $settings.heroScale, range: 0.7...1.8) {
+                            "\(Int(settings.heroScale * 100))%"
+                        }
+                        sliderRow("List", value: $settings.listScale, range: 0.7...1.8) {
+                            "\(Int(settings.listScale * 100))%"
+                        }
+                        Button("Reset layout") { settings.resetLayout() }
+                            .buttonStyle(.plain)
+                            .foregroundColor(Theme.accent)
+                    }
+                    .padding(.top, 8)
+                } label: {
+                    Text("ADVANCED LAYOUT")
+                        .font(.system(size: 10, weight: .bold, design: .monospaced))
+                        .tracking(2)
+                        .foregroundColor(Theme.muted2)
+                }
+
+                Text(settings.hotKeyRegistered
+                     ? "LimitHUD · \(settings.hotKeyDisplay) to toggle the card"
+                     : "⚠ \(settings.hotKeyDisplay) is taken — rebind it under CARD")
                     .font(.system(size: 10, weight: .medium, design: .monospaced))
                     .tracking(0.5)
-                    .foregroundColor(Theme.muted3)
+                    .foregroundColor(settings.hotKeyRegistered ? Theme.muted3 : Theme.warning)
+                    .multilineTextAlignment(.center)
                     .frame(maxWidth: .infinity, alignment: .center)
                     .padding(.top, 4)
             }
-            .padding(20)
+            .padding(.horizontal, 18)
+            .padding(.top, 30)   // clear the (transparent-titlebar) traffic lights
+            .padding(.bottom, 20)
             .tint(Theme.accent)
             .font(.system(size: 13))
+            .foregroundColor(Theme.ink)
         }
-        .frame(width: 360, height: 540)
-        .background(Theme.bg)
+        .frame(width: 380, height: 560)
+        // Same premium frosted-dark surface as the card.
+        .background(FrostedBackground().overlay(Theme.surface.opacity(0.92)).ignoresSafeArea())
+        .environment(\.colorScheme, .dark)
+    }
+
+    /// Card-style header for the window (the title bar is hidden).
+    private var settingsHeader: some View {
+        HStack(spacing: 7) {
+            Text("SETTINGS")
+                .font(.system(size: 12, weight: .bold, design: .monospaced))
+                .tracking(2.4)
+                .foregroundColor(Theme.ink)
+            Circle().fill(Theme.accent).frame(width: 5, height: 5)
+            Spacer()
+        }
     }
 
     /// All currently-available window keys ("Provider/Label") across providers.
@@ -210,12 +263,19 @@ struct SettingsView: View {
 
     @ViewBuilder
     private func group<C: View>(_ title: String, @ViewBuilder _ content: () -> C) -> some View {
-        VStack(alignment: .leading, spacing: 13) {
+        VStack(alignment: .leading, spacing: 9) {
             Text(title)
-                .font(.system(size: 10, weight: .bold, design: .monospaced))
+                .font(.system(size: 9.5, weight: .bold, design: .monospaced))
                 .tracking(2)
                 .foregroundColor(Theme.muted2)
-            content()
+                .padding(.leading, 2)
+            VStack(alignment: .leading, spacing: 12) { content() }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(13)
+                .background(Theme.surface2.opacity(0.5),
+                            in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .strokeBorder(Theme.border2, lineWidth: 1))
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -228,15 +288,23 @@ private struct HotKeyRecorder: View {
     @State private var monitor: Any?
 
     var body: some View {
-        HStack {
-            Text("Toggle hotkey").foregroundColor(Theme.inkDim)
-            Spacer()
-            Button(recording ? "Press keys…" : settings.hotKeyDisplay) {
-                recording ? stop() : start()
+        VStack(alignment: .leading, spacing: 5) {
+            HStack {
+                Text("Toggle hotkey").foregroundColor(Theme.inkDim)
+                Spacer()
+                Button(recording ? "Press keys…" : settings.hotKeyDisplay) {
+                    recording ? stop() : start()
+                }
+                .buttonStyle(.bordered)
+                .tint(recording ? Theme.warning : (settings.hotKeyRegistered ? Theme.accent : Theme.error))
+                .font(.system(size: 12, weight: .medium, design: .monospaced))
             }
-            .buttonStyle(.bordered)
-            .tint(recording ? Theme.warning : Theme.accent)
-            .font(.system(size: 12, weight: .medium, design: .monospaced))
+            if !settings.hotKeyRegistered && !recording {
+                Text("⚠ \(settings.hotKeyDisplay) is taken by another app — pick a different combo")
+                    .font(.system(size: 10))
+                    .foregroundColor(Theme.warning)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
         .onDisappear { stop() } // don't leak the key monitor if the window closes mid-record
     }

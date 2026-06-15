@@ -21,6 +21,12 @@ final class Settings: ObservableObject {
 
     // Card stays pinned (persistent floating) vs. transient peek popover
     @Published var cardPinned: Bool         { didSet { d.set(cardPinned, forKey: "cardPinned") } }
+    // First-run: show a one-time hint nudging the user to Settings to customize.
+    @Published var introSeen: Bool          { didSet { d.set(introSeen, forKey: "introSeen") } }
+    // Demo mode: drive the card with simulated quota that cycles every state.
+    @Published var demoMode: Bool           { didSet { d.set(demoMode, forKey: "demoMode") } }
+    // Whether the global toggle hotkey registered (false = taken by another app).
+    @Published var hotKeyRegistered = true
 
     // Menu bar display
     @Published var petStyle: String         { didSet { d.set(petStyle, forKey: "petStyle") } }          // mochi | neko | boo | inu
@@ -39,8 +45,19 @@ final class Settings: ObservableObject {
 
     // Card
     @Published var opacity: Double          { didSet { d.set(opacity, forKey: "opacity") } }
-    @Published var cardScale: Double        { didSet { d.set(cardScale, forKey: "cardScale") } } // 0.8–1.6
+    @Published var cardScale: Double        { didSet { d.set(cardScale, forKey: "cardScale") } } // uniform zoom
     @Published var launchAtLogin: Bool      { didSet { d.set(launchAtLogin, forKey: "launchAtLogin"); applyLaunchAtLogin() } }
+
+    // Free-form layout: card width + independent size of each region.
+    @Published var cardWidth: Double        { didSet { d.set(cardWidth, forKey: "cardWidth") } }  // content column, pre-zoom pts
+    @Published var petScale: Double         { didSet { d.set(petScale, forKey: "petScale") } }    // pet band multiplier
+    @Published var heroScale: Double        { didSet { d.set(heroScale, forKey: "heroScale") } }  // bottleneck block multiplier
+    @Published var listScale: Double        { didSet { d.set(listScale, forKey: "listScale") } }  // provider list multiplier
+
+    /// Restore the card geometry to its shipped defaults.
+    func resetLayout() {
+        cardWidth = 206; cardScale = 1.0; petScale = 1.0; heroScale = 1.0; listScale = 1.0
+    }
 
     // Custom card background
     @Published var cardBgCustom: Bool       { didSet { d.set(cardBgCustom, forKey: "cardBgCustom") } }
@@ -128,6 +145,8 @@ final class Settings: ObservableObject {
         monitorClaude        = bool("monitorClaude", true)
         monitorCodex         = bool("monitorCodex", true)
         cardPinned           = bool("cardPinned", false)
+        introSeen            = bool("introSeen", false)
+        demoMode             = bool("demoMode", false)
         petStyle             = ud.string(forKey: "petStyle") ?? "mochi"
         menuBarSource        = ud.string(forKey: "menuBarSource") ?? "tightest"
         menuBarQuietHealthy  = ud.object(forKey: "menuBarQuietHealthy") == nil ? true : ud.bool(forKey: "menuBarQuietHealthy")
@@ -140,6 +159,11 @@ final class Settings: ObservableObject {
         opacity              = dbl("opacity", 1.0)
         cardScale            = dbl("cardScale", 1.0)
         launchAtLogin        = bool("launchAtLogin", false)
+
+        cardWidth            = dbl("cardWidth", 206)
+        petScale             = dbl("petScale", 1.0)
+        heroScale            = dbl("heroScale", 1.0)
+        listScale            = dbl("listScale", 1.0)
 
         cardBgCustom         = bool("cardBgCustom", false)
         cardBgR              = dbl("cardBgR", 0.086) // default ≈ #161618

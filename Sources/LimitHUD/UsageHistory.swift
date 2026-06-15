@@ -10,9 +10,12 @@ final class UsageHistory {
     struct Sample: Codable { let t: Double; let r: Double } // unix time, remaining 0…1
 
     private var series: [String: [Sample]] = [:]
+    private var baseline: [String: Double] = [:]   // EWMA of burn/sec per window — the "usual" pace
     private let cap = 240                 // ~4h at 1-min refresh
     private let maxAge: TimeInterval = 6 * 3600
     private let key = "usageHistory.v1"
+    private let baselineKey = "usageBaseline.v1"
+    private let baselineAlpha = 0.04      // slow → baseline = pace over many sessions
 
     private init() { load() }
 
@@ -28,6 +31,19 @@ final class UsageHistory {
         if arr.count > cap { arr.removeFirst(arr.count - cap) }
         series[k] = arr
         save()
+        // Blend the current short-term burn into the long-run "usual" baseline.
+        if let burn = currentBurn(provider: provider, label: label) {
+            baseline[k] = baseline[k].map { $0 * (1 - baselineAlpha) + burn * baselineAlpha } ?? burn
+            saveBaseline()
+        }
+    }
+
+    /// Drop a window's history + baseline (used when demo mode releases its keys).
+    func forget(provider: String, label: String) {
+        let k = "\(provider)/\(label)"
+        series[k] = nil
+        baseline[k] = nil
+        save(); saveBaseline()
     }
 
     /// Recent samples for a window (oldest → newest), within `window` seconds.
@@ -61,6 +77,34 @@ final class UsageHistory {
         return eta
     }
 
+    /// Least-squares slope of remaining vs. time (per second; negative = burning).
+    private func slope(_ pts: [Sample], minSpan: TimeInterval) -> Double? {
+        guard pts.count >= 2, pts.last!.t - pts.first!.t >= minSpan else { return nil }
+        let n = Double(pts.count)
+        let mx = pts.reduce(0) { $0 + $1.t } / n
+        let my = pts.reduce(0) { $0 + $1.r } / n
+        var sxx = 0.0, sxy = 0.0
+        for p in pts { let dx = p.t - mx; sxx += dx * dx; sxy += dx * (p.r - my) }
+        guard sxx > 0 else { return nil }
+        return sxy / sxx
+    }
+
+    /// Short-term burn rate (per second, positive = burning) over `window` seconds.
+    func currentBurn(provider: String, label: String, window: TimeInterval = 900) -> Double? {
+        guard let s = slope(recent(provider: provider, label: label, window: window), minSpan: 60),
+              s < 0 else { return nil }
+        return -s
+    }
+
+    /// How fast this window is burning vs. its usual baseline (1 = typical, 2 = twice
+    /// as fast). nil when not burning, or there's no established baseline yet.
+    func pace(provider: String, label: String) -> Double? {
+        guard let cur = currentBurn(provider: provider, label: label),
+              let base = baseline["\(provider)/\(label)"], base > 1e-9
+        else { return nil }
+        return cur / base
+    }
+
     // MARK: Persistence
 
     private func save() {
@@ -68,12 +112,27 @@ final class UsageHistory {
         UserDefaults.standard.set(data, forKey: key)
     }
 
-    private func load() {
-        guard let data = UserDefaults.standard.data(forKey: key),
-              let decoded = try? JSONDecoder().decode([String: [Sample]].self, from: data)
-        else { return }
-        series = decoded
+    private func saveBaseline() {
+        guard let data = try? JSONEncoder().encode(baseline) else { return }
+        UserDefaults.standard.set(data, forKey: baselineKey)
     }
+
+    private func load() {
+        if let data = UserDefaults.standard.data(forKey: key),
+           let decoded = try? JSONDecoder().decode([String: [Sample]].self, from: data) {
+            series = decoded
+        }
+        if let data = UserDefaults.standard.data(forKey: baselineKey),
+           let decoded = try? JSONDecoder().decode([String: Double].self, from: data) {
+            baseline = decoded
+        }
+    }
+}
+
+/// Format a pace multiple like "~2×" / "~1.5×" (nearest half, min 1.5).
+func paceString(_ ratio: Double) -> String {
+    let n = max(1.5, (ratio * 2).rounded() / 2)
+    return n == n.rounded() ? "~\(Int(n))×" : "~\(n)×"
 }
 
 /// Format an ETA like "~22m" / "~3h10m" / "~2d".

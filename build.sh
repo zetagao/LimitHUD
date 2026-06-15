@@ -24,6 +24,11 @@ cp "${BIN}" "${APP}/Contents/MacOS/${APP_NAME}"
 cp "Info.plist" "${APP}/Contents/Info.plist"
 printf 'APPL????' > "${APP}/Contents/PkgInfo"
 [[ -f "AppIcon.icns" ]] && cp "AppIcon.icns" "${APP}/Contents/Resources/AppIcon.icns"
+# Pet illustration assets (transparent PNGs) → Resources/pets/
+if compgen -G "Assets/pets/*.png" > /dev/null; then
+  mkdir -p "${APP}/Contents/Resources/pets"
+  cp Assets/pets/*.png "${APP}/Contents/Resources/pets/"
+fi
 
 SIGN_ID="LimitHUD Self-Signed"
 if security find-identity -p codesigning | grep -q "${SIGN_ID}"; then

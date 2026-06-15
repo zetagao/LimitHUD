@@ -34,4 +34,5 @@ struct ProviderQuota: Identifiable {
     var error: String?         // non-nil → show error state (e.g. not logged in)
     var stale: Bool = false    // showing last-good data because the latest refresh failed
     var lastGood: Date? = nil  // when the shown data was actually fetched
+    var staleReason: String? = nil // latest refresh failure while showing last-good data
 }

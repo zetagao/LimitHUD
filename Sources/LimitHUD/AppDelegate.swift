@@ -22,6 +22,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             onPin: { [weak self] in self?.togglePin() }
         )
         setupStatusItem()
+        // Warm all pet frames so switching characters never hitches (which froze
+        // the UI on the previous pet's frame — the "flash of Lota").
+        DispatchQueue.main.async { PetImage.warmAll() }
         NotificationCenter.default.addObserver(
             self, selector: #selector(panelMoved),
             name: NSWindow.didMoveNotification, object: panel)
@@ -30,11 +33,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         hotKey = HotKeyManager { [weak self] in self?.togglePanel() }
         let s = Settings.shared
-        hotKey.register(keyCode: UInt32(s.hotKeyKeyCode), carbonModifiers: UInt32(s.hotKeyModifiers))
+        s.hotKeyRegistered = hotKey.register(keyCode: UInt32(s.hotKeyKeyCode), carbonModifiers: UInt32(s.hotKeyModifiers))
         s.$hotKeyKeyCode.combineLatest(s.$hotKeyModifiers)
             .dropFirst()
             .sink { [weak self] code, mods in
-                self?.hotKey.register(keyCode: UInt32(code), carbonModifiers: UInt32(mods))
+                Settings.shared.hotKeyRegistered =
+                    self?.hotKey.register(keyCode: UInt32(code), carbonModifiers: UInt32(mods)) ?? false
             }
             .store(in: &cancellables)
 
@@ -59,9 +63,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             let host = NSHostingController(rootView: SettingsView(store: store))
             let win = NSWindow(contentViewController: host)
             win.title = "LimitHUD Settings"
-            win.styleMask = [.titled, .closable]
+            win.styleMask = [.titled, .closable, .fullSizeContentView]
+            win.titleVisibility = .hidden
+            win.titlebarAppearsTransparent = true
+            win.isMovableByWindowBackground = true
+            win.backgroundColor = .clear
+            win.isOpaque = false
+            win.appearance = NSAppearance(named: .darkAqua)   // match the card's dark look
             win.isReleasedWhenClosed = false
-            win.setContentSize(NSSize(width: 360, height: 470))
+            win.setContentSize(NSSize(width: 380, height: 560))
             settingsWC = NSWindowController(window: win)
         }
         settingsWC?.window?.center()
@@ -99,31 +109,38 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         return pairs.min { $0.1 < $1.1 }.map { (name: $0.0, remaining: $0.1) }
     }
 
-    /// Quiet when healthy; amber/red when it matters. Shows "<Provider> <%>".
+    /// Menu bar shows just "<Provider> <%>", always in white.
     private func updateStatusItem() {
         guard let button = statusItem?.button else { return }
-        let s = Settings.shared
         let pick = menuBarPick()
-
-        var tint: NSColor?
-        if let v = pick?.remaining {
-            if v < 0.2 { tint = .systemRed }
-            else if v < 0.5 { tint = .systemOrange }
-            else { tint = s.menuBarQuietHealthy ? nil : .systemGreen }
-        }
-
         let valueText: String
         if let pick { valueText = "\(pick.name) \(Int(pick.remaining * 100))%" }
         else { valueText = "–" }
 
-        // Menu bar stays clean: just the tightest quota %, tinted by state.
-        // The pet lives on the card, where it has room to be expressive.
-        button.image = nil
-        button.contentTintColor = tint
-        button.attributedTitle = NSAttributedString(string: valueText, attributes: [
-            .foregroundColor: tint ?? NSColor.labelColor,
-            .font: NSFont.monospacedDigitSystemFont(ofSize: NSFont.systemFontSize - 1, weight: .medium)
-        ])
+        // Rendered as a NON-template image so the menu bar can't recolor it — the
+        // title's foregroundColor is ignored on the status bar (renders black on a
+        // light menu bar), but a non-template image keeps exactly the color we draw.
+        // Always white per the user's request (no red/amber tint).
+        button.attributedTitle = NSAttributedString(string: "")
+        button.title = ""
+        button.contentTintColor = nil
+        button.image = Self.menuImage(valueText, color: .white)
+        button.imagePosition = .imageOnly
+    }
+
+    /// Draw the menu-bar text into a non-template image so its color is preserved
+    /// (white by default) regardless of the menu bar's light/dark appearance.
+    private static func menuImage(_ text: String, color: NSColor) -> NSImage {
+        let font = NSFont.monospacedDigitSystemFont(ofSize: NSFont.systemFontSize - 1, weight: .medium)
+        let attrs: [NSAttributedString.Key: Any] = [.font: font, .foregroundColor: color]
+        let textSize = (text as NSString).size(withAttributes: attrs)
+        let size = NSSize(width: ceil(textSize.width) + 2, height: ceil(textSize.height))
+        let img = NSImage(size: size, flipped: false) { _ in
+            (text as NSString).draw(at: NSPoint(x: 1, y: 0), withAttributes: attrs)
+            return true
+        }
+        img.isTemplate = false
+        return img
     }
 
     @objc private func statusItemClicked() {
@@ -165,11 +182,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// Show the card. Pinned → restore remembered/anchored position and stay put.
     /// Unpinned → "peek" under the icon and auto-dismiss on the next outside click.
     private func showPanel() {
+        // Show transparent first: SwiftUI doesn't repaint while the card is hidden,
+        // so the window still holds its last frame (e.g., a previously-viewed pet).
+        // Fading in only after a runloop tick — once SwiftUI has repainted the
+        // current state — avoids that stale frame flashing on open.
+        panel.alphaValue = 0
         // Restore the remembered spot if there is one; otherwise anchor under
         // the icon. Applies to both peek and pinned so a moved card stays put.
         positionPanel()
         panel.orderFrontRegardless()
         installPeekMonitorIfNeeded()
+        NotificationCenter.default.post(name: .hudCardWillShow, object: nil)
+        DispatchQueue.main.async {
+            NSAnimationContext.runAnimationGroup { ctx in
+                ctx.duration = 0.16
+                self.panel.animator().alphaValue = 1
+            }
+        }
     }
 
     private func hidePanel() {

@@ -31,13 +31,17 @@ final class HotKeyManager {
 
     /// (Re)bind the global hotkey. keyCode is a Carbon virtual keycode,
     /// carbonModifiers a Carbon modifier mask (cmdKey/shiftKey/optionKey/controlKey).
-    func register(keyCode: UInt32, carbonModifiers: UInt32) {
+    /// Returns true if the OS accepted the binding (false if it's already taken by
+    /// another app, in which case the shortcut won't fire).
+    @discardableResult
+    func register(keyCode: UInt32, carbonModifiers: UInt32) -> Bool {
         if let ref = hotKeyRef {
             UnregisterEventHotKey(ref)
             hotKeyRef = nil
         }
         let hotKeyID = EventHotKeyID(signature: OSType(0x4C484B31) /* 'LHK1' */, id: 1)
-        RegisterEventHotKey(keyCode, carbonModifiers, hotKeyID, GetApplicationEventTarget(), 0, &hotKeyRef)
+        let status = RegisterEventHotKey(keyCode, carbonModifiers, hotKeyID, GetApplicationEventTarget(), 0, &hotKeyRef)
+        return status == noErr && hotKeyRef != nil
     }
 
     deinit {

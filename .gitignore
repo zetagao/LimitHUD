@@ -20,3 +20,11 @@ Package.resolved
 CLAUDE.md
 design/*.png
 tools/petpreview*.swift
+
+# Pet illustration assets are large (122M w/ source video) build inputs — the
+# signed release carries them; source builds fall back to the procedural pet.
+Assets/
+
+# Local scratch
+.vscode/
+LimitHUD_FULL_PACKAGE_chatGPT/
