@@ -95,7 +95,7 @@ text("LimitHUD", lx, 270, 74, ink, weight: .bold, kern: -1)
 text("Live Claude & Codex quota — right on your Mac.", lx, 372, 25, muted)
 
 // feature lines
-let feats = ["Tightest quota, right in your menu bar", "A pixel pet that reacts to your quota", "Burn-rate forecast before you run dry", "Local & open source — nothing leaves your Mac"]
+let feats = ["Tightest quota, right in your menu bar", "An illustrated pet that reacts to your quota", "Forecasts when you'll run dry — before you do", "Local & open source — nothing leaves your Mac"]
 var fy: CGFloat = 452
 for f in feats {
     ctx.setFillColor(green.cgColor)
@@ -135,12 +135,13 @@ let secs = [
 
 // measure height
 let heroH: CGFloat = 150
-let mbH: CGFloat = 70       // mascot band (pet + speech bubble)
+let petBandH: CGFloat = 64  // pet companion row near the bottom
 var ch = pad + 40           // header
-ch += mbH + 14              // mascot band + gap
 ch += heroH + 18            // bottleneck hero + gap
 for s in secs { ch += 30 + CGFloat(s.rows.count)*48 + 10 }
-ch += 14 + 30 + pad         // divider + footer
+ch += 16                    // divider + gap
+ch += petBandH + 12         // pet companion + gap
+ch += 30 + pad              // footer
 let cy = (H - ch)/2
 
 // green glow behind card
@@ -180,37 +181,7 @@ for (i, gx) in [CW-pad-88, CW-pad-66, CW-pad-44, CW-pad-22].enumerated() {
 }
 y += 40
 
-// ── Mascot band: the quota pet + its speech bubble ──
-let petSize: CGFloat = 66
-var petImg: NSImage!
-MainActor.assumeIsolated {
-    petImg = PixelPet.sprite(style: "mochi", state: "danger", grid: 44, frame: 8)
-}
-petImg.draw(in: NSRect(x: tx - 4, y: y, width: petSize, height: petSize), from: .zero,
-            operation: .sourceOver, fraction: 1, respectFlipped: true,
-            hints: [.interpolation: NSImageInterpolation.none.rawValue])
-// speech bubble
-let bubTitle = "eep!! so low!!"
-let bubSub = "CODEX · NEARLY DRY"
-let bpad: CGFloat = 14, tail: CGFloat = 7
-let bubInnerW = max(textW(bubTitle, 17, weight: .semibold), textW(bubSub, 12, mono: true, kern: 1))
-let bubW = bubInnerW + bpad*2, bubH: CGFloat = 54
-let bx = tx + petSize + 6
-let bubY = y + (petSize - bubH)/2
-let bodyRect = CGRect(x: bx+tail, y: bubY, width: bubW, height: bubH)
-let bMidY = bubY + bubH/2
-let bTail = CGMutablePath()
-bTail.move(to: CGPoint(x: bx, y: bMidY))
-bTail.addLine(to: CGPoint(x: bx+tail+1, y: bMidY-tail))
-bTail.addLine(to: CGPoint(x: bx+tail+1, y: bMidY+tail))
-bTail.closeSubpath()
-ctx.addPath(roundedPath(bodyRect, 11)); ctx.addPath(bTail)
-ctx.setFillColor(C(1,1,1,0.07).cgColor); ctx.fillPath()
-ctx.addPath(roundedPath(bodyRect, 11)); ctx.addPath(bTail)
-ctx.setStrokeColor(C(1,1,1,0.18).cgColor); ctx.setLineWidth(1); ctx.strokePath()
-text(bubTitle, bx+tail+bpad, bubY+10, 17, red, weight: .semibold)
-text(bubSub, bx+tail+bpad, bubY+33, 12, muted2, mono: true, kern: 1)
-y += mbH + 14
+// (the pet now lives in a companion row near the bottom, not a top speech bubble)
 
 // ── Bottleneck hero (the tightest window, called out big) ──
 let hero = secs[1].rows[0]              // CODEX · 5-Hour, 14%, red
@@ -225,24 +196,37 @@ hy += 24
 // big number + "% left"
 let bigW = text("\(hero.pct)", tx+hp, hy, 46, hero.color, weight: .bold, mono: true)
 text("% left", tx+hp+bigW+8, hy+24, 16, muted, weight: .medium, mono: true)
-// sparkline (recent usage trending down) on the right
-let spX = cx+CW-pad-hp-96, spY = hy+6, spW: CGFloat = 96, spH: CGFloat = 40
-let pts = [0.82, 0.74, 0.7, 0.55, 0.43, 0.3, 0.22, 0.14]
+// sparkline (recent usage) + dashed forecast projected to empty, on the right
+let spX = cx+CW-pad-hp-104, spY = hy+4, spW: CGFloat = 104, spH: CGFloat = 42
+let pts = [0.82, 0.74, 0.68, 0.55, 0.44, 0.34, 0.25, 0.18]
+let histW = spW * 0.56
 func spPoint(_ i: Int) -> CGPoint {
-    CGPoint(x: spX + spW*CGFloat(i)/CGFloat(pts.count-1), y: spY + spH*(1 - CGFloat(pts[i])))
+    CGPoint(x: spX + histW*CGFloat(i)/CGFloat(pts.count-1), y: spY + spH*(1 - CGFloat(pts[i])))
 }
+let lastPt = spPoint(pts.count-1)
+let emptyPt = CGPoint(x: spX+spW, y: spY+spH)        // 0% at the forecast-empty time
+// area fill under history
 ctx.saveGState()
 let area = CGMutablePath()
 area.move(to: CGPoint(x: spX, y: spY+spH))
 for i in pts.indices { area.addLine(to: spPoint(i)) }
-area.addLine(to: CGPoint(x: spX+spW, y: spY+spH)); area.closeSubpath()
+area.addLine(to: CGPoint(x: lastPt.x, y: spY+spH)); area.closeSubpath()
 ctx.addPath(area); ctx.clip()
 if let g = CGGradient(colorsSpace: sRGB, colors: [hero.color.withAlphaComponent(0.28).cgColor, hero.color.withAlphaComponent(0).cgColor] as CFArray, locations: [0,1]) {
     ctx.drawLinearGradient(g, start: CGPoint(x: 0, y: spY), end: CGPoint(x: 0, y: spY+spH), options: [])
 }
 ctx.restoreGState()
+// history line
 ctx.setStrokeColor(hero.color.cgColor); ctx.setLineWidth(2); ctx.setLineJoin(.round); ctx.setLineCap(.round)
 ctx.move(to: spPoint(0)); for i in pts.indices.dropFirst() { ctx.addLine(to: spPoint(i)) }; ctx.strokePath()
+// dashed forecast diving to empty
+ctx.saveGState()
+ctx.setStrokeColor(hero.color.withAlphaComponent(0.5).cgColor); ctx.setLineWidth(1.4); ctx.setLineCap(.round)
+ctx.setLineDash(phase: 0, lengths: [3, 3])
+ctx.move(to: lastPt); ctx.addLine(to: emptyPt); ctx.strokePath()
+ctx.restoreGState()
+ctx.setFillColor(hero.color.withAlphaComponent(0.9).cgColor)
+ctx.fillEllipse(in: CGRect(x: emptyPt.x-2.5, y: emptyPt.y-2.5, width: 5, height: 5))
 hy = y + heroH - 50
 // thick bar
 ctx.addPath(roundedPath(CGRect(x: tx+hp, y: hy, width: barW-hp*2, height: 9), 4.5)); ctx.setFillColor(C(1,1,1,0.08).cgColor); ctx.fillPath()
@@ -284,9 +268,20 @@ for s in secs {
     }
     y += 10
 }
-// divider + footer
+// divider
 ctx.setFillColor(C(1,1,1,0.08).cgColor); ctx.fill(CGRect(x: tx, y: y, width: barW, height: 1))
-y += 14
+y += 16
+// ── pet companion row: the pet's voice (left) + illustrated pet (right) ──
+let petSize: CGFloat = 64
+if let petImg = NSImage(contentsOfFile: "Assets/pets/cat-idle-v0-00.png") {
+    petImg.draw(in: NSRect(x: cx + CW - pad - petSize, y: y - 8, width: petSize, height: petSize),
+                from: .zero, operation: .sourceOver, fraction: 1, respectFlipped: true,
+                hints: [.interpolation: NSImageInterpolation.high.rawValue])
+}
+text("eep, so low…", tx, y + 6, 17, muted, weight: .medium, mono: true)
+text("Codex · nearly dry", tx, y + 31, 12, muted2, mono: true, kern: 0.5)
+y += petBandH + 12
+// footer
 text("SYNCED 15:49", tx, y, 13, muted2, weight: .bold, mono: true, kern: 0.5)
 let kb = "⌘⇧L"
 let kbw = textW(kb, 13, weight: .medium, mono: true)
