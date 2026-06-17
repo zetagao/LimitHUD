@@ -56,6 +56,12 @@ struct SettingsView: View {
                     }
                     .disabled(!settings.thresholdEnabled)
                     Toggle("Recovery reminder", isOn: $settings.recoveryEnabled)
+                    Toggle("Forecast alert", isOn: $settings.forecastAlertEnabled)
+                    Toggle("Pace alert (burning faster than usual)", isOn: $settings.paceAlertEnabled)
+                    Text("Forecast: warns when you'll run dry before reset. Pace: warns when you're burning ~2× your usual rate.")
+                        .font(.system(size: 11))
+                        .foregroundColor(Theme.muted2)
+                        .fixedSize(horizontal: false, vertical: true)
                     Toggle("System notifications", isOn: $settings.notificationsEnabled)
                     Toggle("Sound", isOn: $settings.soundEnabled)
                     Toggle("Quiet hours", isOn: $settings.dndEnabled)
@@ -166,6 +172,11 @@ struct SettingsView: View {
                             get: { settings.cardBarColor },
                             set: { settings.cardBarColor = $0 }
                         ))
+                    }
+                    if settings.cardBgCustom || settings.cardFgCustom || settings.cardBarCustom || settings.opacity < 1 {
+                        Button("Reset appearance") { settings.resetAppearance() }
+                            .buttonStyle(.plain)
+                            .foregroundColor(Theme.accent)
                     }
                 }
 

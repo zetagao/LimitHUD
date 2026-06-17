@@ -57,11 +57,13 @@
 ### Reminders
 - **Low-quota alert** — a system notification when any window drops below your threshold (default 20%).
 - **Recovery reminder** — a notification when a window resets back above the threshold.
-- Edge-detected, so it fires once per crossing (no spam).
+- **Forecast alert** 🔥 — a heads-up when a window is projected to run dry *before it resets* (within ~30 min).
+- **Pace alert** ⚡ — a heads-up when you're burning **~2× your usual rate** and under 50% left — catch a runaway session early.
+- Edge-detected + cooled down, so they fire once per episode (no spam).
 - System notification + sound toggles, plus **quiet hours** to mute reminders during a daily window.
 
 ### Settings (⚙ / right-click → Settings… / ⌘,)
-- **Reminders** — alert on/off, threshold %, recovery reminder, notifications, sound, quiet hours.
+- **Reminders** — alert on/off, threshold %, recovery reminder, forecast alert, pace alert, notifications, sound, quiet hours.
 - **Pet** — choose your character: Mochi / Lota / Bao / Mozart.
 - **Menu bar** — point at the tightest window or lock to Claude / Codex; quiet-when-healthy toggle.
 - **Sources** — Claude / Codex toggles.
@@ -183,7 +185,7 @@ MIT — see [LICENSE](LICENSE).
 - 大多数时候它就**安静地待着**，偶尔伸个懒腰、看看四周——是个不打扰你的陪伴。
 - 它会用各自的口吻在卡片标题那行说话。
 
-**提醒**：低额阈值告警（默认 <20%）、额度恢复提醒、边沿检测不刷屏、通知+声音开关、**勿扰时段**。
+**提醒**：低额阈值告警（默认 <20%）、额度恢复提醒、**燃尽预警**🔥（预测在重置前见底、~30 分钟内时提醒）、**加速预警**⚡（烧到平时 ~2 倍且剩余<50% 时提醒）、边沿检测+冷却不刷屏、通知+声音开关、**勿扰时段**。
 
 **设置**：REMINDERS（告警/阈值/恢复/通知/声音/勿扰时段）、PET（选角色：团子 Mochi / 猫 Lota / 狗 Bao / 幽灵 Mozart）、MENU BAR（盯最紧窗口或锁定 Claude/Codex、健康时安静开关）、SOURCES（Claude/Codex 开关）、BROWSER（Claude 与 Codex 可各自选不同浏览器/profile，适配两个不同 Google 账号）、CARD CONTENT（逐窗口自定义显示）、REFRESH（间隔）、CARD（自定义快捷键/缩放/背景色+文字色+进度条色/位置记忆/开机自启/透明度）。
 

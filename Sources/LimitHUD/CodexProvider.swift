@@ -12,7 +12,7 @@ enum CodexProvider {
             let cookieHeader = cookies.map { "\($0.key)=\($0.value)" }.joined(separator: "; ")
 
             guard let token = try await accessToken(cookieHeader: cookieHeader) else {
-                return err("Session expired")
+                return err("Sign in to ChatGPT")
             }
 
             guard let url = URL(string: "https://chatgpt.com/backend-api/codex/usage") else {
@@ -31,7 +31,7 @@ enum CodexProvider {
                     return err("Cloudflare check")
                 }
                 switch http.statusCode {
-                case 401: return err("Session expired")
+                case 401: return err("Token expired — re-sign in")
                 case 429: return err("Rate limited")
                 case 403: return err("Blocked (403)")
                 default:  return err("HTTP \(http.statusCode)")

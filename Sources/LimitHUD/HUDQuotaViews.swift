@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 
 /// Big "what's my real ceiling" block: the tightest window, large percent and bar.
 struct BottleneckHero: View {
@@ -123,27 +124,58 @@ struct ProviderSection: View {
                 }
             }
             if provider.stale, let reason = provider.staleReason {
-                HStack(spacing: 5 * s) {
-                    Image(systemName: "clock.badge.exclamationmark")
-                        .font(.system(size: 8.5 * s))
-                    Text("showing saved data - \(reason)")
-                        .font(.system(size: 9 * s, weight: .medium))
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.75)
+                tappable {
+                    HStack(spacing: 5 * s) {
+                        Image(systemName: "clock.badge.exclamationmark")
+                            .font(.system(size: 8.5 * s))
+                        Text("showing saved data - \(reason)")
+                            .font(.system(size: 9 * s, weight: .medium))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.75)
+                    }
+                    .foregroundColor(Theme.warning.opacity(0.9))
                 }
-                .foregroundColor(Theme.warning.opacity(0.9))
             }
             if let error = provider.error {
-                HStack(spacing: 5 * s) {
-                    Image(systemName: "exclamationmark.triangle.fill").font(.system(size: 8.5 * s))
-                    Text(error).font(.system(size: 10.5 * s, weight: .medium))
+                tappable {
+                    HStack(spacing: 5 * s) {
+                        Image(systemName: "exclamationmark.triangle.fill").font(.system(size: 8.5 * s))
+                        Text(error).font(.system(size: 10.5 * s, weight: .medium))
+                        if site != nil {
+                            Image(systemName: "arrow.up.forward")
+                                .font(.system(size: 7 * s, weight: .bold)).opacity(0.7)
+                        }
+                    }
+                    .foregroundColor(Theme.warning)
                 }
-                .foregroundColor(Theme.warning)
             } else {
                 ForEach(windows) { window in
                     QuotaRow(window: window, s: s, p: p, bar: bar)
                 }
             }
+        }
+    }
+
+    /// Where to send the user to fix a sign-in / token problem for this provider.
+    private var site: (name: String, url: URL)? {
+        switch provider.name {
+        case "Codex":  return ("chatgpt.com", URL(string: "https://chatgpt.com")!)
+        case "Claude": return ("claude.ai",  URL(string: "https://claude.ai")!)
+        default:       return nil
+        }
+    }
+
+    /// Wrap a warning row so clicking it opens the provider's site (to re-sign-in).
+    @ViewBuilder private func tappable<V: View>(@ViewBuilder _ content: () -> V) -> some View {
+        if let site {
+            Button { NSWorkspace.shared.open(site.url) } label: {
+                content().contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .help("Open \(site.name) to sign in")
+            .onHover { $0 ? NSCursor.pointingHand.push() : NSCursor.pop() }
+        } else {
+            content()
         }
     }
 }

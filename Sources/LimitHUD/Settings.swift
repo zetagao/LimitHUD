@@ -25,6 +25,9 @@ final class Settings: ObservableObject {
     @Published var introSeen: Bool          { didSet { d.set(introSeen, forKey: "introSeen") } }
     // Demo mode: drive the card with simulated quota that cycles every state.
     @Published var demoMode: Bool           { didSet { d.set(demoMode, forKey: "demoMode") } }
+    // Proactive smart alerts (notify before you open the card).
+    @Published var forecastAlertEnabled: Bool { didSet { d.set(forecastAlertEnabled, forKey: "forecastAlertEnabled") } }
+    @Published var paceAlertEnabled: Bool     { didSet { d.set(paceAlertEnabled, forKey: "paceAlertEnabled") } }
     // Whether the global toggle hotkey registered (false = taken by another app).
     @Published var hotKeyRegistered = true
 
@@ -57,6 +60,12 @@ final class Settings: ObservableObject {
     /// Restore the card geometry to its shipped defaults.
     func resetLayout() {
         cardWidth = 206; cardScale = 1.0; petScale = 1.0; heroScale = 1.0; listScale = 1.0
+    }
+
+    /// Back to the default dark card: drop any custom colors and full opacity.
+    func resetAppearance() {
+        cardBgCustom = false; cardFgCustom = false; cardBarCustom = false
+        opacity = 1.0
     }
 
     // Custom card background
@@ -147,6 +156,8 @@ final class Settings: ObservableObject {
         cardPinned           = bool("cardPinned", false)
         introSeen            = bool("introSeen", false)
         demoMode             = bool("demoMode", false)
+        forecastAlertEnabled = bool("forecastAlertEnabled", true)
+        paceAlertEnabled     = bool("paceAlertEnabled", true)
         petStyle             = ud.string(forKey: "petStyle") ?? "mochi"
         menuBarSource        = ud.string(forKey: "menuBarSource") ?? "tightest"
         menuBarQuietHealthy  = ud.object(forKey: "menuBarQuietHealthy") == nil ? true : ud.bool(forKey: "menuBarQuietHealthy")
